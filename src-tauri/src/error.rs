@@ -1,0 +1,68 @@
+use serde::Serialize;
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum AppError {
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("PDF error: {0}")]
+    Pdf(String),
+
+    #[error("PDFium error: {0}")]
+    Pdfium(String),
+
+    #[error("Image error: {0}")]
+    Image(String),
+
+    #[error("Invalid input: {0}")]
+    InvalidInput(String),
+}
+
+impl From<lopdf::Error> for AppError {
+    fn from(value: lopdf::Error) -> Self {
+        AppError::Pdf(value.to_string())
+    }
+}
+
+impl From<image::ImageError> for AppError {
+    fn from(value: image::ImageError) -> Self {
+        AppError::Image(value.to_string())
+    }
+}
+
+impl Serialize for AppError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OpResult {
+    pub output_paths: Vec<String>,
+    pub page_count: u32,
+    pub elapsed_ms: u64,
+}
+
+impl OpResult {
+    pub fn new(output_paths: Vec<String>, page_count: u32, elapsed_ms: u64) -> Self {
+        Self {
+            output_paths,
+            page_count,
+            elapsed_ms,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FilePreview {
+    pub data_url: String,
+    pub page_count: u32,
+    pub page: u32,
+    pub kind: String,
+}

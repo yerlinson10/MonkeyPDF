@@ -1,0 +1,71 @@
+/* Hallmark · Workbench · press-shop banana stamp · Syne only
+ * Tracking kept neutral — Syne’s shapes already carry identity; tight tracking reads “skewed”
+ */
+
+:root {
+  /* Original punchier desk */
+  --color-desk: oklch(18% 0.025 145);
+  --color-desk-2: oklch(22% 0.02 145);
+  --color-desk-line: oklch(30% 0.02 145);
+  --color-desk-mute: oklch(72% 0.02 145);
+
+  --color-paper: oklch(98.5% 0.006 95);
+  --color-paper-2: oklch(95% 0.01 95);
+  --color-ink: oklch(16% 0.02 145);
+  --color-ink-2: oklch(42% 0.015 145);
+  --color-ink-3: oklch(58% 0.01 145);
+  --color-rule: oklch(88% 0.01 95);
+  --color-rule-strong: oklch(16% 0.02 145);
+
+  --color-accent: oklch(84% 0.18 95);
+  --color-accent-ink: oklch(18% 0.04 95);
+  --color-accent-soft: oklch(94% 0.07 95);
+
+  --color-focus: oklch(70% 0.16 95);
+  --color-ok: oklch(42% 0.11 150);
+  --color-ok-soft: oklch(94% 0.03 150);
+  --color-danger: oklch(48% 0.17 25);
+  --color-danger-soft: oklch(95% 0.03 25);
+  --color-warn-soft: oklch(94% 0.06 95);
+
+  --font-ui: "Syne", system-ui, sans-serif;
+
+  --text-xs: 0.72rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 2.75rem;
+  --text-hero: clamp(2.75rem, 6vw, 4.5rem);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+
+  --shadow-stamp: 3px 3px 0 var(--color-ink);
+  --shadow-sheet: 0 12px 28px oklch(10% 0.02 145 / 0.28);
+
+  --ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ease-hover: ease;
+  --dur-fast: 90ms;
+  --dur-ui: 140ms;
+
+  --rail-width: 260px;
+
+  /* Scrollbar — stamp strip (paper default; rail overrides) */
+  --scroll-size: 6px;
+  --scroll-track: var(--color-paper-2);
+  --scroll-thumb: var(--color-ink-2);
+  --scroll-thumb-hover: var(--color-accent);
+  --scroll-thumb-active: var(--color-accent);
+  --scroll-edge: var(--color-ink);
+}
