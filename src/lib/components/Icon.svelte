@@ -6,6 +6,12 @@
     | 'compress'
     | 'pdf-to-jpg'
     | 'jpg-to-pdf'
+    | 'protect'
+    | 'page-numbers'
+    | 'office'
+    | 'markdown'
+    | 'ai'
+    | 'settings'
     | 'upload'
     | 'folder'
     | 'arrow-up'
@@ -60,6 +66,29 @@
     <rect x="8" y="3" width="12" height="16" rx="1.5" />
     <path d="M4 7h4v12a1.5 1.5 0 0 1-1.5 1.5H5.5A1.5 1.5 0 0 1 4 19V7z" />
     <path d="M12 8h4M12 12h4" />
+  {:else if name === 'protect'}
+    <rect x="5" y="11" width="14" height="10" rx="1.5" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    <circle cx="12" cy="16" r="1.2" fill="currentColor" stroke="none" />
+  {:else if name === 'page-numbers'}
+    <rect x="5" y="3" width="14" height="18" rx="1.5" />
+    <path d="M9 8h6M9 12h6M9 16h3" />
+  {:else if name === 'office'}
+    <rect x="4" y="4" width="7" height="7" rx="1" />
+    <rect x="13" y="4" width="7" height="7" rx="1" />
+    <rect x="4" y="13" width="7" height="7" rx="1" />
+    <rect x="13" y="13" width="7" height="7" rx="1" />
+  {:else if name === 'markdown'}
+    <path d="M4 6h16v12H4z" />
+    <path d="M7 15V9l2.5 3L12 9v6M15 12h2m0 0l-1.5-2M17 12l-1.5 2" />
+  {:else if name === 'ai'}
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4l1.4-1.4M17 7l1.4-1.4" />
+  {:else if name === 'settings'}
+    <circle cx="12" cy="12" r="3" />
+    <path
+      d="M12 3.5v2.2M12 18.3v2.2M4.9 7.1l1.6 1.6M17.5 15.3l1.6 1.6M3.5 12h2.2M18.3 12h2.2M4.9 16.9l1.6-1.6M17.5 8.7l1.6-1.6"
+    />
   {:else if name === 'upload'}
     <path d="M12 16V6" />
     <path d="M8 10l4-4 4 4" />

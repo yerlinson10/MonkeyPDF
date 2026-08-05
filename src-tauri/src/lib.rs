@@ -8,6 +8,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_store::Builder::new().build())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -30,6 +31,14 @@ pub fn run() {
             commands::compress_pdf,
             commands::pdf_to_jpg,
             commands::jpg_to_pdf,
+            commands::protect_pdf,
+            commands::unlock_pdf,
+            commands::add_page_numbers,
+            commands::convert_office,
+            commands::check_libreoffice,
+            commands::pdf_to_markdown,
+            commands::ai_process_pdf,
+            commands::write_text_file,
             commands::get_pdf_page_count,
             commands::preview_pdf,
             commands::preview_image,

@@ -1,5 +1,5 @@
 use crate::error::{FilePreview, OpResult};
-use crate::pdf_engine;
+use crate::pdf_engine::{self, AiResult};
 use tauri::command;
 
 #[command]
@@ -62,6 +62,102 @@ pub async fn jpg_to_pdf(paths: Vec<String>, output: String) -> Result<OpResult, 
 }
 
 #[command]
+pub async fn protect_pdf(
+    path: String,
+    user_password: String,
+    owner_password: Option<String>,
+    output: String,
+) -> Result<OpResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        pdf_engine::protect_pdf(path, user_password, owner_password, output)
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn unlock_pdf(
+    path: String,
+    password: String,
+    output: String,
+) -> Result<OpResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::unlock_pdf(path, password, output))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn add_page_numbers(
+    path: String,
+    output: String,
+    position: String,
+    format: Option<String>,
+    start_from: Option<u32>,
+    font_size: Option<f32>,
+) -> Result<OpResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        pdf_engine::add_page_numbers(path, output, position, format, start_from, font_size)
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn convert_office(
+    path: String,
+    target: String,
+    output_dir: String,
+) -> Result<OpResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        pdf_engine::convert_with_libreoffice(path, target, output_dir)
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn check_libreoffice() -> Result<bool, crate::error::AppError> {
+    Ok(pdf_engine::soffice_available())
+}
+
+#[command]
+pub async fn pdf_to_markdown(
+    path: String,
+    output: String,
+) -> Result<OpResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::pdf_to_markdown(path, output))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn ai_process_pdf(
+    path: String,
+    action: String,
+    provider: String,
+    api_key: String,
+    model: Option<String>,
+    target_lang: Option<String>,
+    base_url: Option<String>,
+) -> Result<AiResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        pdf_engine::run_ai_on_pdf(path, action, provider, api_key, model, target_lang, base_url)
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn write_text_file(
+    path: String,
+    content: String,
+) -> Result<OpResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::write_text_file(path, content))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
 pub async fn get_pdf_page_count(path: String) -> Result<u32, crate::error::AppError> {
     tauri::async_runtime::spawn_blocking(move || {
         let p = pdf_engine::ensure_pdf_path(&path)?;
@@ -97,7 +193,6 @@ pub async fn preview_image(
     .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
 }
 
-/// Reveal a file (selected) or folder in the system file manager.
 #[command]
 pub async fn reveal_in_explorer(path: String) -> Result<(), crate::error::AppError> {
     tauri::async_runtime::spawn_blocking(move || reveal_path(&path))
@@ -105,7 +200,6 @@ pub async fn reveal_in_explorer(path: String) -> Result<(), crate::error::AppErr
         .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
 }
 
-/// Show a Windows toast; clicking it opens the file/folder in Explorer.
 #[command]
 pub async fn notify_done(
     title: String,
@@ -137,7 +231,6 @@ fn show_clickable_notification(
     #[cfg(target_os = "windows")]
     apply_windows_app_id(&mut notification);
 
-    // Named button (Windows shows it); body click is still Default.
     notification.action("open", "Abrir en explorador");
 
     let handle = notification
@@ -176,7 +269,6 @@ fn apply_windows_app_id(notification: &mut notify_rust::Notification) {
     let debug = format!("{sep}target{sep}debug");
     let release = format!("{sep}target{sep}release");
     let test = format!("{sep}target-test{sep}");
-    // Installed builds get the real AUMID; cargo runs keep the PowerShell toast host.
     if !(s.ends_with(&debug) || s.ends_with(&release) || s.contains(&test)) {
         notification.app_id("com.monkeypdf.desktop");
     }
@@ -198,12 +290,11 @@ fn reveal_path(path: &str) -> Result<(), crate::error::AppError> {
         if p.is_dir() {
             cmd.arg(p.as_os_str());
         } else {
-            // `/select,C:\path\file` opens Explorer with the file highlighted.
             cmd.arg(format!("/select,{}", p.display()));
         }
         cmd.creation_flags(CREATE_NO_WINDOW)
             .spawn()
-            .map_err(|e| crate::error::AppError::Io(e))?;
+            .map_err(crate::error::AppError::Io)?;
     }
 
     #[cfg(target_os = "macos")]

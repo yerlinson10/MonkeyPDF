@@ -19,7 +19,11 @@ playful-técnico · press-shop / banana stamp
 See `tokens.css`
 
 ## Macrostructure
-Workbench — N3 side rail (numbered 01–06) + sheet canvas
+Workbench — N3 side rail (numbered 01–12) + sheet canvas
+
+## Tools (rail)
+01–06 core · 07 Proteger · 08 Numerar · 09 Office · 10 Markdown · 11 IA  
+Ajustes = icono fijo en el pie del rail (no hace scroll con la lista)
 
 ## Voice
 Short verbs. Stamp tags. “Taller local.” “Hazlo local.”

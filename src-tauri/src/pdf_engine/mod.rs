@@ -1,16 +1,26 @@
+mod ai;
 mod compress;
 mod images_to_pdf;
+mod markdown;
 mod merge;
+mod office;
+mod page_numbers;
 mod pdf_to_images;
 mod preview;
+mod protect;
 mod rotate;
 mod split;
 
+pub use ai::{run_ai_on_pdf, write_text_file, AiResult};
 pub use compress::compress_pdf;
 pub use images_to_pdf::images_to_pdf;
+pub use markdown::pdf_to_markdown;
 pub use merge::merge_pdfs;
+pub use office::{convert_with_libreoffice, soffice_available};
+pub use page_numbers::add_page_numbers;
 pub use pdf_to_images::pdf_to_jpg;
 pub use preview::{preview_image, preview_pdf};
+pub use protect::{protect_pdf, unlock_pdf};
 pub use rotate::rotate_pdf;
 pub use split::split_pdf;
 

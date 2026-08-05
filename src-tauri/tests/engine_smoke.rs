@@ -150,4 +150,43 @@ fn merge_split_rotate_smoke() {
             );
         }
     }
+
+    // Protect → unlock roundtrip
+    let protected = dir.join("protected.pdf");
+    let unlocked = dir.join("unlocked.pdf");
+    pdf_engine::protect_pdf(
+        merged.to_string_lossy().to_string(),
+        "secret123".into(),
+        None,
+        protected.to_string_lossy().to_string(),
+    )
+    .expect("protect failed");
+    assert!(protected.exists());
+    pdf_engine::unlock_pdf(
+        protected.to_string_lossy().to_string(),
+        "secret123".into(),
+        unlocked.to_string_lossy().to_string(),
+    )
+    .expect("unlock failed");
+    assert!(unlocked.exists());
+
+    let numbered = dir.join("numbered.pdf");
+    pdf_engine::add_page_numbers(
+        unlocked.to_string_lossy().to_string(),
+        numbered.to_string_lossy().to_string(),
+        "bottom-center".into(),
+        Some("{n}/{total}".into()),
+        Some(1),
+        Some(10.0),
+    )
+    .expect("page numbers failed");
+    assert!(numbered.exists());
+
+    let md = dir.join("out.md");
+    pdf_engine::pdf_to_markdown(
+        unlocked.to_string_lossy().to_string(),
+        md.to_string_lossy().to_string(),
+    )
+    .expect("markdown failed");
+    assert!(md.exists());
 }
