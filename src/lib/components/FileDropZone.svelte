@@ -11,11 +11,18 @@
   } from '../api'
   import Icon from './Icon.svelte'
 
+  /* Hallmark · component: file-drop · genre: playful-técnico · theme: press-shop banana
+   * states: default · hover · focus · active · disabled · loading · error · success
+   * contrast: pass
+   */
+
   interface Props {
     paths?: string[]
     accept?: string
     multiple?: boolean
     label?: string
+    /** When false, skip the large preview stage (e.g. tool has its own editor). */
+    showPreview?: boolean
   }
 
   let {
@@ -23,6 +30,7 @@
     accept = '.pdf',
     multiple = true,
     label = 'Arrastra archivos aquí o elige desde disco',
+    showPreview = true,
   }: Props = $props()
 
   let dragging = $state(false)
@@ -33,6 +41,8 @@
   let stage = $state<FilePreview | null>(null)
   let stageLoading = $state(false)
   let stageError = $state<string | null>(null)
+
+  const singleFilled = $derived(!multiple && paths.length === 1)
 
   function acceptExtensions(): string[] {
     return accept
@@ -49,6 +59,7 @@
 
   function addPaths(incoming: string[]) {
     const filtered = incoming.filter(matchesAccept)
+    if (filtered.length === 0) return
     if (multiple) {
       const set = new Set(paths)
       for (const p of filtered) set.add(p)
@@ -56,7 +67,7 @@
     } else {
       paths = filtered.slice(0, 1)
     }
-    if (filtered[0]) void selectPreview(filtered[filtered.length - 1])
+    if (showPreview && filtered[0]) void selectPreview(filtered[filtered.length - 1])
   }
 
   async function pickFiles() {
@@ -78,7 +89,7 @@
       pageCounts = restPages
       if (activePath === removed) {
         activePath = paths[0] ?? null
-        if (activePath) void selectPreview(activePath)
+        if (activePath && showPreview) void selectPreview(activePath)
         else {
           stage = null
           stageError = null
@@ -112,6 +123,10 @@
   }
 
   async function selectPreview(path: string, page = 1) {
+    if (!showPreview) {
+      activePath = path
+      return
+    }
     activePath = path
     stageLoading = true
     stageError = null
@@ -140,7 +155,8 @@
       void loadThumb(path)
     }
     if (paths.length === 1 && activePath !== paths[0]) {
-      void selectPreview(paths[0])
+      if (showPreview) void selectPreview(paths[0])
+      else activePath = paths[0]
     }
     if (paths.length === 0) {
       activePath = null
@@ -170,26 +186,43 @@
 </script>
 
 <div class="space-y-3">
-  <button type="button" onclick={pickFiles} class="mp-drop" class:is-dragging={dragging}>
-    <div
-      class="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-[var(--radius-md)] border border-[var(--color-rule)] bg-[var(--color-paper)] text-[var(--color-ink)]"
+  {#if !singleFilled}
+    <button
+      type="button"
+      onclick={pickFiles}
+      class="mp-drop"
+      class:is-dragging={dragging}
+      class:is-single={!multiple}
     >
-      <Icon name="upload" size={20} />
-    </div>
-    <p class="text-[var(--text-sm)] font-semibold text-[var(--color-ink)]">{label}</p>
-    <p class="mono mt-1 text-[var(--text-xs)] text-[var(--color-ink-2)]">
-      {accept.replaceAll('.', '').toUpperCase()}
-    </p>
-  </button>
+      <div
+        class="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-[var(--radius-md)] border border-[var(--color-rule)] bg-[var(--color-paper)] text-[var(--color-ink)]"
+      >
+        <Icon name="upload" size={20} />
+      </div>
+      <p class="text-[var(--text-sm)] font-semibold text-[var(--color-ink)]">{label}</p>
+      <p class="mono mt-1 text-[var(--text-xs)] text-[var(--color-ink-2)]">
+        {#if multiple}
+          {accept.replaceAll('.', '').toUpperCase()} · varios archivos
+        {:else}
+          {accept.replaceAll('.', '').toUpperCase()} · un solo archivo
+        {/if}
+      </p>
+    </button>
+  {/if}
 
   {#if paths.length > 0}
     <ul class="space-y-2">
       {#each paths as path, index (path)}
-        <li class="mp-file-row" class:is-preview-active={activePath === path}>
+        <li
+          class="mp-file-row"
+          class:is-preview-active={showPreview && activePath === path}
+          class:is-single-chip={singleFilled}
+        >
           <button
             type="button"
             class="mp-file-main"
-            onclick={() => selectPreview(path)}
+            onclick={() => (showPreview ? selectPreview(path) : undefined)}
+            disabled={!showPreview}
           >
             <span class="mp-thumb" aria-hidden="true">
               {#if thumbs[path]}
@@ -211,6 +244,15 @@
               {/if}
             </span>
           </button>
+          {#if singleFilled}
+            <button
+              type="button"
+              class="mp-btn mp-btn-ghost !min-h-9 !px-3"
+              onclick={pickFiles}
+            >
+              Cambiar
+            </button>
+          {/if}
           {#if multiple && paths.length > 1}
             <button
               type="button"
@@ -242,7 +284,7 @@
     </ul>
   {/if}
 
-  {#if activePath}
+  {#if showPreview && activePath}
     <div class="mp-preview-stage">
       <div class="mp-preview-meta">
         <span class="mono selectable truncate" title={activePath}>{fileName(activePath)}</span>

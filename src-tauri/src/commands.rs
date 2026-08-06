@@ -121,6 +121,87 @@ pub async fn check_libreoffice() -> Result<bool, crate::error::AppError> {
 }
 
 #[command]
+pub async fn check_tesseract() -> Result<bool, crate::error::AppError> {
+    Ok(pdf_engine::tesseract_available())
+}
+
+#[command]
+pub async fn ocr_pdf(
+    path: String,
+    output: String,
+    lang: Option<String>,
+    mode: Option<String>,
+) -> Result<OpResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::ocr_pdf(path, output, lang, mode))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn redact_pdf(
+    path: String,
+    output: String,
+    regions: Vec<pdf_engine::RedactRegion>,
+) -> Result<OpResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::redact_pdf(path, output, regions))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn crop_pdf(
+    path: String,
+    output: String,
+    crop: pdf_engine::CropBox,
+    pages: Option<Vec<u32>>,
+) -> Result<OpResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::crop_pdf(path, output, crop, pages))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn compare_pdfs(
+    path_a: String,
+    path_b: String,
+    output_dir: String,
+    mode: Option<String>,
+) -> Result<OpResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        pdf_engine::compare_pdfs(path_a, path_b, output_dir, mode)
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageMediaBox {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+}
+
+#[command]
+pub async fn get_page_mediabox(
+    path: String,
+    page: u32,
+) -> Result<PageMediaBox, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let (x, y, width, height) = pdf_engine::page_mediabox(&path, page)?;
+        Ok(PageMediaBox {
+            x,
+            y,
+            width,
+            height,
+        })
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
 pub async fn pdf_to_markdown(
     path: String,
     output: String,
@@ -198,6 +279,53 @@ pub async fn reveal_in_explorer(path: String) -> Result<(), crate::error::AppErr
     tauri::async_runtime::spawn_blocking(move || reveal_path(&path))
         .await
         .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+/// Open http(s) URLs in the system default browser (Tauri webview blocks <a target=_blank>).
+#[command]
+pub async fn open_url(url: String) -> Result<(), crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || open_external_url(&url))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+fn open_external_url(url: &str) -> Result<(), crate::error::AppError> {
+    let trimmed = url.trim();
+    if !(trimmed.starts_with("https://") || trimmed.starts_with("http://")) {
+        return Err(crate::error::AppError::InvalidInput(
+            "Solo se permiten URLs http(s)".into(),
+        ));
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        // `start` is a cmd builtin; empty title arg avoids swallowing the URL.
+        std::process::Command::new("cmd")
+            .args(["/C", "start", "", trimmed])
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map_err(crate::error::AppError::Io)?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(trimmed)
+            .spawn()
+            .map_err(crate::error::AppError::Io)?;
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(trimmed)
+            .spawn()
+            .map_err(crate::error::AppError::Io)?;
+    }
+
+    Ok(())
 }
 
 #[command]

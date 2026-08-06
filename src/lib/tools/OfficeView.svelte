@@ -53,10 +53,18 @@
   <ResultBanner {loading} {error} {result} toolLabel="Office convert" />
 
   {#if available === false}
-    <div class="mp-empty-card" style="padding: var(--space-4)">
-      <p>
-        LibreOffice no está instalado. Instálalo desde libreoffice.org y reinicia MonkeyPDF.
-      </p>
+    <div class="mp-alert is-warn is-sticky" role="alert">
+      <div class="mp-alert-mark" aria-hidden="true">!</div>
+      <div class="mp-alert-body">
+        <span class="mp-alert-kicker">Requisito</span>
+        <p class="mp-alert-title">LibreOffice no detectado</p>
+        <p>
+          Office necesita LibreOffice en el sistema. Instálalo y reinicia MonkeyPDF.
+          <a href="https://www.libreoffice.org/" target="_blank" rel="noreferrer"
+            >Descargar LibreOffice →</a
+          >
+        </p>
+      </div>
     </div>
   {:else if available === true}
     <p class="text-[var(--text-xs)] text-[var(--color-ink-2)]">

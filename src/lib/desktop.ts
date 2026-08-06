@@ -2,6 +2,8 @@
  * Makes the WebView behave like a desktop shell, not a browser tab.
  * Call once at app boot.
  */
+import { invoke } from '@tauri-apps/api/core'
+
 export function installDesktopShell() {
   // Hide Chromium/WebView right-click menu (Inspect, Reload, Save as…)
   // Keep OS menu on editable fields for copy/paste.
@@ -66,6 +68,24 @@ export function installDesktopShell() {
     'auxclick',
     (event) => {
       if (event.button === 1) event.preventDefault()
+    },
+    { capture: true },
+  )
+
+  // External links: open in the OS browser (webview ignores target=_blank)
+  document.addEventListener(
+    'click',
+    (event) => {
+      const target = event.target
+      if (!(target instanceof Element)) return
+      const anchor = target.closest('a[href]')
+      if (!(anchor instanceof HTMLAnchorElement)) return
+      const href = anchor.getAttribute('href')?.trim() ?? ''
+      if (!(href.startsWith('https://') || href.startsWith('http://'))) return
+      event.preventDefault()
+      void invoke('open_url', { url: href }).catch((err) => {
+        console.warn('No se pudo abrir la URL', err)
+      })
     },
     { capture: true },
   )

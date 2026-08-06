@@ -12,6 +12,10 @@
   import ProtectView from './lib/tools/ProtectView.svelte'
   import PageNumbersView from './lib/tools/PageNumbersView.svelte'
   import OfficeView from './lib/tools/OfficeView.svelte'
+  import OcrView from './lib/tools/OcrView.svelte'
+  import RedactView from './lib/tools/RedactView.svelte'
+  import CropView from './lib/tools/CropView.svelte'
+  import CompareView from './lib/tools/CompareView.svelte'
   import MarkdownView from './lib/tools/MarkdownView.svelte'
   import AiView from './lib/tools/AiView.svelte'
   import SettingsView from './lib/tools/SettingsView.svelte'
@@ -97,7 +101,7 @@
           <div>
             <span class="kicker">Hoja de trabajo</span>
             <h1>Escoge el sello</h1>
-            <p>Once herramientas. Un clic. El PDF no sale de tu máquina.</p>
+            <p>Quince herramientas. Un clic. El PDF no sale de tu máquina.</p>
           </div>
         </header>
         <div class="mp-canvas-body">
@@ -110,12 +114,12 @@
               </div>
               <div class="giant">Hazlo<br /><em>local.</em></div>
               <p>
-                Núcleo, suite ofimática e IA con tu propia clave. Menú a la izquierda — resultado en
-                la hoja.
+                Núcleo, suite, OCR/censura y IA con tu propia clave. Menú a la izquierda — resultado
+                en la hoja.
               </p>
               <div class="mp-hint-row">
-                <span class="mp-hint">01–11 tools</span>
-                <span class="mp-hint">LibreOffice opcional</span>
+                <span class="mp-hint">01–15 tools</span>
+                <span class="mp-hint">Tesseract opcional</span>
                 <span class="mp-hint">banana stamp</span>
               </div>
             </div>
@@ -154,6 +158,14 @@
               <PageNumbersView />
             {:else if activeTool === 'office'}
               <OfficeView />
+            {:else if activeTool === 'ocr'}
+              <OcrView />
+            {:else if activeTool === 'redact'}
+              <RedactView />
+            {:else if activeTool === 'crop'}
+              <CropView />
+            {:else if activeTool === 'compare'}
+              <CompareView />
             {:else if activeTool === 'markdown'}
               <MarkdownView />
             {:else if activeTool === 'ai'}

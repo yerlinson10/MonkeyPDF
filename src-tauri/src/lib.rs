@@ -36,6 +36,12 @@ pub fn run() {
             commands::add_page_numbers,
             commands::convert_office,
             commands::check_libreoffice,
+            commands::check_tesseract,
+            commands::ocr_pdf,
+            commands::redact_pdf,
+            commands::crop_pdf,
+            commands::compare_pdfs,
+            commands::get_page_mediabox,
             commands::pdf_to_markdown,
             commands::ai_process_pdf,
             commands::write_text_file,
@@ -43,6 +49,7 @@ pub fn run() {
             commands::preview_pdf,
             commands::preview_image,
             commands::reveal_in_explorer,
+            commands::open_url,
             commands::notify_done,
         ])
         .run(tauri::generate_context!())

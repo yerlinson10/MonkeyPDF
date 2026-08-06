@@ -25,6 +25,10 @@ export type ToolId =
   | 'office'
   | 'markdown'
   | 'ai'
+  | 'ocr'
+  | 'redact'
+  | 'crop'
+  | 'compare'
   | 'settings'
 
 export interface ToolMeta {
@@ -33,7 +37,7 @@ export interface ToolMeta {
   short: string
   description: string
   accept: string
-  group?: 'core' | 'suite' | 'ai'
+  group?: 'core' | 'suite' | 'advanced' | 'ai'
 }
 
 export const TOOLS: ToolMeta[] = [
@@ -108,6 +112,38 @@ export const TOOLS: ToolMeta[] = [
     description: 'Convierte Word, Excel, PowerPoint o HTML ↔ PDF con LibreOffice.',
     accept: '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.html,.htm,.odt,.ods,.odp',
     group: 'suite',
+  },
+  {
+    id: 'ocr',
+    title: 'OCR',
+    short: 'Escaneo → texto',
+    description: 'Reconoce texto con Tesseract del sistema (Markdown, TXT o PDF buscable).',
+    accept: '.pdf',
+    group: 'advanced',
+  },
+  {
+    id: 'redact',
+    title: 'Censura',
+    short: 'Tachar zonas',
+    description: 'Cubre zonas con negro permanente: aplana la página (sin texto ni campos debajo).',
+    accept: '.pdf',
+    group: 'advanced',
+  },
+  {
+    id: 'crop',
+    title: 'Recorte',
+    short: 'CropBox',
+    description: 'Recorta páginas fijando CropBox y MediaBox al área seleccionada.',
+    accept: '.pdf',
+    group: 'advanced',
+  },
+  {
+    id: 'compare',
+    title: 'Comparar',
+    short: 'A vs B',
+    description: 'Compara dos PDFs por texto y/o diferencia visual página a página.',
+    accept: '.pdf',
+    group: 'advanced',
   },
   {
     id: 'markdown',
@@ -231,6 +267,108 @@ export async function convertOffice(
 
 export async function checkLibreOffice(): Promise<boolean> {
   return invoke('check_libreoffice')
+}
+
+export async function checkTesseract(): Promise<boolean> {
+  return invoke('check_tesseract')
+}
+
+export async function ocrPdf(
+  path: string,
+  output: string,
+  lang: string | null,
+  mode: string | null,
+): Promise<OpResult> {
+  return invoke('ocr_pdf', { path, output, lang, mode })
+}
+
+export interface RedactRegion {
+  page: number
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+export async function redactPdf(
+  path: string,
+  output: string,
+  regions: RedactRegion[],
+): Promise<OpResult> {
+  return invoke('redact_pdf', { path, output, regions })
+}
+
+export interface CropBox {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+export async function cropPdf(
+  path: string,
+  output: string,
+  crop: CropBox,
+  pages: number[] | null,
+): Promise<OpResult> {
+  return invoke('crop_pdf', { path, output, crop, pages })
+}
+
+export async function comparePdfs(
+  pathA: string,
+  pathB: string,
+  outputDir: string,
+  mode: string | null,
+): Promise<OpResult> {
+  return invoke('compare_pdfs', { pathA, pathB, outputDir, mode })
+}
+
+export interface PageMediaBox {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export async function getPageMediabox(path: string, page: number): Promise<PageMediaBox> {
+  return invoke('get_page_mediabox', { path, page })
+}
+
+/** Normalized rect (0–1, top-left) → PDF points (bottom-left). */
+export function normRectToPdf(
+  nx: number,
+  ny: number,
+  nw: number,
+  nh: number,
+  box: PageMediaBox,
+): { x: number; y: number; w: number; h: number } {
+  return {
+    x: box.x + nx * box.width,
+    y: box.y + (1 - ny - nh) * box.height,
+    w: nw * box.width,
+    h: nh * box.height,
+  }
+}
+
+export async function normRectsToPdfRegions(
+  pdfPath: string,
+  rects: Array<{ page: number; nx: number; ny: number; nw: number; nh: number }>,
+): Promise<RedactRegion[]> {
+  const byPage = new Map<number, typeof rects>()
+  for (const r of rects) {
+    const list = byPage.get(r.page) ?? []
+    list.push(r)
+    byPage.set(r.page, list)
+  }
+  const out: RedactRegion[] = []
+  for (const [p, list] of byPage) {
+    const box = await getPageMediabox(pdfPath, p)
+    for (const r of list) {
+      const pts = normRectToPdf(r.nx, r.ny, r.nw, r.nh, box)
+      out.push({ page: r.page, ...pts })
+    }
+  }
+  return out
 }
 
 export async function pdfToMarkdown(path: string, output: string): Promise<OpResult> {

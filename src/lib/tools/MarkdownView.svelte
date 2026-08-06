@@ -36,7 +36,7 @@
   <ResultBanner {loading} {error} {result} toolLabel="PDF → Markdown" />
   <FileDropZone bind:paths accept=".pdf" multiple={false} label="Arrastra un PDF con texto" />
   <p class="text-[var(--text-xs)] text-[var(--color-ink-2)]">
-    Extrae texto nativo. PDFs escaneados sin capa de texto necesitan OCR (Fase 3).
+    Extrae texto nativo. PDFs escaneados sin capa de texto: usa la herramienta OCR.
   </p>
   <OutputPicker
     bind:value={output}

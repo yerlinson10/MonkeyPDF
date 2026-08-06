@@ -9,6 +9,10 @@
     | 'protect'
     | 'page-numbers'
     | 'office'
+    | 'ocr'
+    | 'redact'
+    | 'crop'
+    | 'compare'
     | 'markdown'
     | 'ai'
     | 'settings'
@@ -78,6 +82,20 @@
     <rect x="13" y="4" width="7" height="7" rx="1" />
     <rect x="4" y="13" width="7" height="7" rx="1" />
     <rect x="13" y="13" width="7" height="7" rx="1" />
+  {:else if name === 'ocr'}
+    <rect x="4" y="5" width="16" height="14" rx="1.5" />
+    <path d="M8 9h8M8 12h6M8 15h4" />
+    <circle cx="17" cy="15" r="1.5" />
+  {:else if name === 'redact'}
+    <rect x="4" y="4" width="16" height="16" rx="1.5" />
+    <path d="M7 8h10M7 12h10M7 16h6" stroke-width="2.5" />
+  {:else if name === 'crop'}
+    <path d="M6 3v12a3 3 0 0 0 3 3h12" />
+    <path d="M18 21V9a3 3 0 0 0-3-3H3" />
+  {:else if name === 'compare'}
+    <rect x="3" y="4" width="8" height="16" rx="1" />
+    <rect x="13" y="4" width="8" height="16" rx="1" />
+    <path d="M6 9h2M6 12h2M16 9h2M16 13h2" />
   {:else if name === 'markdown'}
     <path d="M4 6h16v12H4z" />
     <path d="M7 15V9l2.5 3L12 9v6M15 12h2m0 0l-1.5-2M17 12l-1.5 2" />
