@@ -29,6 +29,6 @@ base64 = "0.22"
 tauri-plugin-notification = "2.3.3"
 notify-rust = "4"
 tauri-plugin-store = "2"
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "blocking"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "blocking", "gzip", "brotli", "deflate"] }
 rand = "0.8"
 md-5 = "0.10"

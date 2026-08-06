@@ -134,6 +134,76 @@ fn truncate(s: &str, max_chars: usize) -> String {
     s.chars().take(max_chars).collect::<String>() + "\n\n[…truncado]"
 }
 
+fn http_client() -> Result<reqwest::blocking::Client, AppError> {
+    reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(120))
+        .user_agent("MonkeyPDF/0.1")
+        .build()
+        .map_err(|e| AppError::Pdf(format!("No se pudo crear cliente HTTP: {e}")))
+}
+
+fn read_json_body(
+    res: reqwest::blocking::Response,
+    label: &str,
+) -> Result<(reqwest::StatusCode, serde_json::Value), AppError> {
+    let status = res.status();
+    let raw = res
+        .text()
+        .map_err(|e| AppError::Pdf(format!("{label}: no se pudo leer la respuesta ({e})")))?;
+
+    if raw.trim().is_empty() {
+        return Err(AppError::Pdf(format!(
+            "{label} respondió vacío (HTTP {status}). Revisa API key, modelo y saldo."
+        )));
+    }
+
+    match serde_json::from_str::<serde_json::Value>(&raw) {
+        Ok(json) => Ok((status, json)),
+        Err(e) => {
+            let snippet: String = raw.chars().take(280).collect();
+            Err(AppError::Pdf(format!(
+                "{label} no devolvió JSON (HTTP {status}): {e}. Cuerpo: {snippet}"
+            )))
+        }
+    }
+}
+
+fn openai_message_text(json: &serde_json::Value) -> Option<String> {
+    let content = &json["choices"][0]["message"]["content"];
+    if let Some(s) = content.as_str() {
+        let t = s.trim();
+        if !t.is_empty() {
+            return Some(t.to_string());
+        }
+    }
+    // Some providers return content as an array of parts.
+    if let Some(arr) = content.as_array() {
+        let text: String = arr
+            .iter()
+            .filter_map(|part| {
+                part.as_str()
+                    .or_else(|| part["text"].as_str())
+                    .map(str::to_string)
+            })
+            .collect::<Vec<_>>()
+            .join("");
+        let t = text.trim();
+        if !t.is_empty() {
+            return Some(t.to_string());
+        }
+    }
+    None
+}
+
+fn provider_error_message(json: &serde_json::Value) -> String {
+    json["error"]["message"]
+        .as_str()
+        .or_else(|| json["error"]["metadata"]["raw"].as_str())
+        .or_else(|| json["message"].as_str())
+        .map(str::to_string)
+        .unwrap_or_else(|| json.to_string())
+}
+
 fn call_openai(
     api_key: &str,
     model: &str,
@@ -141,11 +211,19 @@ fn call_openai(
     base_url: Option<&str>,
     label: &str,
 ) -> Result<String, AppError> {
+    let api_key = api_key.trim();
     if api_key.is_empty() {
         return Err(AppError::InvalidInput(format!(
             "API key de {label} requerida"
         )));
     }
+    let model = model.trim();
+    if model.is_empty() {
+        return Err(AppError::InvalidInput(format!(
+            "Modelo de {label} requerido"
+        )));
+    }
+
     let url = format!(
         "{}/chat/completions",
         base_url
@@ -159,15 +237,22 @@ fn call_openai(
             {"role": "system", "content": "Eres un asistente preciso para documentos PDF."},
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.2
+        "temperature": 0.2,
+        "stream": false
     });
 
-    let client = reqwest::blocking::Client::new();
-    let mut req = client.post(&url).bearer_auth(api_key).json(&body);
-    // OpenRouter recommends these optional headers for rankings / policy.
+    let client = http_client()?;
+    let mut req = client
+        .post(&url)
+        .header("Authorization", format!("Bearer {api_key}"))
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json")
+        .json(&body);
+
+    // OpenRouter recommends these headers.
     if label == "OpenRouter" {
         req = req
-            .header("HTTP-Referer", "https://monkeypdf.local")
+            .header("HTTP-Referer", "https://monkeypdf.app")
             .header("X-Title", "MonkeyPDF");
     }
 
@@ -175,27 +260,21 @@ fn call_openai(
         .send()
         .map_err(|e| AppError::Pdf(format!("{label} request failed: {e}")))?;
 
-    let status = res.status();
-    let json: serde_json::Value = res
-        .json()
-        .map_err(|e| AppError::Pdf(format!("{label} response parse: {e}")))?;
+    let (status, json) = read_json_body(res, label)?;
 
     if !status.is_success() {
         return Err(AppError::Pdf(format!(
             "{label} error {status}: {}",
-            json["error"]["message"]
-                .as_str()
-                .unwrap_or(&json.to_string())
+            provider_error_message(&json)
         )));
     }
 
-    json["choices"][0]["message"]["content"]
-        .as_str()
-        .map(str::to_string)
+    openai_message_text(&json)
         .ok_or_else(|| AppError::Pdf(format!("Respuesta {label} sin contenido")))
 }
 
 fn call_anthropic(api_key: &str, model: &str, prompt: &str) -> Result<String, AppError> {
+    let api_key = api_key.trim();
     if api_key.is_empty() {
         return Err(AppError::InvalidInput(
             "API key de Anthropic requerida".into(),
@@ -203,36 +282,31 @@ fn call_anthropic(api_key: &str, model: &str, prompt: &str) -> Result<String, Ap
     }
 
     let body = serde_json::json!({
-        "model": model,
+        "model": model.trim(),
         "max_tokens": 2048,
         "messages": [{"role": "user", "content": prompt}]
     });
 
-    let client = reqwest::blocking::Client::new();
+    let client = http_client()?;
     let res = client
         .post("https://api.anthropic.com/v1/messages")
         .header("x-api-key", api_key)
         .header("anthropic-version", "2023-06-01")
         .header("content-type", "application/json")
+        .header("Accept", "application/json")
         .json(&body)
         .send()
         .map_err(|e| AppError::Pdf(format!("Anthropic request failed: {e}")))?;
 
-    let status = res.status();
-    let json: serde_json::Value = res
-        .json()
-        .map_err(|e| AppError::Pdf(format!("Anthropic response parse: {e}")))?;
+    let (status, json) = read_json_body(res, "Anthropic")?;
 
     if !status.is_success() {
         return Err(AppError::Pdf(format!(
             "Anthropic error {status}: {}",
-            json["error"]["message"]
-                .as_str()
-                .unwrap_or(&json.to_string())
+            provider_error_message(&json)
         )));
     }
 
-    // content is array of {type, text}
     if let Some(arr) = json["content"].as_array() {
         let text: String = arr
             .iter()
@@ -249,26 +323,26 @@ fn call_anthropic(api_key: &str, model: &str, prompt: &str) -> Result<String, Ap
 fn call_ollama(model: &str, prompt: &str, base_url: &str) -> Result<String, AppError> {
     let url = format!("{}/api/generate", base_url.trim_end_matches('/'));
     let body = serde_json::json!({
-        "model": model,
+        "model": model.trim(),
         "prompt": prompt,
         "stream": false
     });
 
-    let client = reqwest::blocking::Client::new();
+    let client = http_client()?;
     let res = client
         .post(&url)
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json")
         .json(&body)
         .send()
         .map_err(|e| AppError::Pdf(format!("Ollama request failed: {e}")))?;
 
-    let status = res.status();
-    let json: serde_json::Value = res
-        .json()
-        .map_err(|e| AppError::Pdf(format!("Ollama response parse: {e}")))?;
+    let (status, json) = read_json_body(res, "Ollama")?;
 
     if !status.is_success() {
         return Err(AppError::Pdf(format!(
-            "Ollama error {status}: {json}"
+            "Ollama error {status}: {}",
+            provider_error_message(&json)
         )));
     }
 
