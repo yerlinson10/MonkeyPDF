@@ -174,6 +174,20 @@ pub async fn compare_pdfs(
     .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
 }
 
+#[command]
+pub async fn compare_report(
+    path_a: String,
+    path_b: String,
+    mode: Option<String>,
+    export_dir: Option<String>,
+) -> Result<pdf_engine::CompareReport, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        pdf_engine::compare_report(path_a, path_b, mode, export_dir)
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PageMediaBox {

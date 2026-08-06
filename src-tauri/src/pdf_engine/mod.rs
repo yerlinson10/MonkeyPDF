@@ -16,7 +16,7 @@ mod rotate;
 mod split;
 
 pub use ai::{run_ai_on_pdf, write_text_file, AiResult};
-pub use compare::compare_pdfs;
+pub use compare::{compare_pdfs, compare_report, CompareReport};
 pub use compress::compress_pdf;
 pub use crop::{crop_pdf, page_mediabox, CropBox};
 pub use images_to_pdf::images_to_pdf;

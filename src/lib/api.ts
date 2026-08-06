@@ -141,7 +141,7 @@ export const TOOLS: ToolMeta[] = [
     id: 'compare',
     title: 'Comparar',
     short: 'A vs B',
-    description: 'Compara dos PDFs por texto y/o diferencia visual página a página.',
+    description: 'Compara A vs B en paralelo: texto, mapa visual y scroll sincronizado.',
     accept: '.pdf',
     group: 'advanced',
   },
@@ -323,6 +323,46 @@ export async function comparePdfs(
   return invoke('compare_pdfs', { pathA, pathB, outputDir, mode })
 }
 
+export interface TextChange {
+  page: number
+  kind: 'only_a' | 'only_b' | 'changed' | string
+  textA: string
+  textB: string
+}
+
+export interface DiffUnderline {
+  /** Normalized 0–1, top-left origin */
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+export interface VisualPageDiff {
+  page: number
+  changedPx: number
+  diffDataUrl: string
+  underlines: DiffUnderline[]
+}
+
+export interface CompareReport {
+  pagesA: number
+  pagesB: number
+  textChanges: TextChange[]
+  visualPages: VisualPageDiff[]
+  elapsedMs: number
+  outputPaths: string[]
+}
+
+export async function compareReport(
+  pathA: string,
+  pathB: string,
+  mode: string | null,
+  exportDir: string | null = null,
+): Promise<CompareReport> {
+  return invoke('compare_report', { pathA, pathB, mode, exportDir })
+}
+
 export interface PageMediaBox {
   x: number
   y: number
@@ -403,11 +443,20 @@ export async function getPdfPageCount(path: string): Promise<number> {
   return invoke('get_pdf_page_count', { path })
 }
 
+export interface PreviewTextSpan {
+  text: string
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
 export interface FilePreview {
   dataUrl: string
   pageCount: number
   page: number
   kind: string
+  textSpans?: PreviewTextSpan[]
 }
 
 export async function previewPdf(

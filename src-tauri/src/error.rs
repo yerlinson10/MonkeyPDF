@@ -65,4 +65,17 @@ pub struct FilePreview {
     pub page_count: u32,
     pub page: u32,
     pub kind: String,
+    /// Positioned text spans (normalized 0–1, top-left) for selection/copy in the UI.
+    #[serde(default)]
+    pub text_spans: Vec<PreviewTextSpan>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PreviewTextSpan {
+    pub text: String,
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
 }

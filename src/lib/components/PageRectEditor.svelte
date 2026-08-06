@@ -1,5 +1,7 @@
 <script lang="ts">
   import { getPageMediabox, previewPdf, type PageMediaBox } from '../api'
+  import { attachMiddlePan } from '../panScroll'
+  import { previewRenderWidth } from '../previewScale'
 
   /* Hallmark · component: page-rect-editor · genre: playful-técnico · theme: press-shop banana
    * states: default · hover · focus · active · disabled · loading · error · success
@@ -53,11 +55,13 @@
   let loadError = $state<string | null>(null)
 
   let zoom = $state(1)
+  let zoomTimer: ReturnType<typeof setTimeout> | null = null
   let selectedId = $state<string | null>(null)
   let drag = $state<DragMode | null>(null)
   let draft = $state<{ nx: number; ny: number; nw: number; nh: number } | null>(null)
 
   let surfaceEl = $state<HTMLDivElement | null>(null)
+  let viewportEl = $state<HTMLDivElement | null>(null)
 
   const MIN_SIZE = 0.012
   const ZOOM_MIN = 0.5
@@ -66,14 +70,20 @@
 
   const pageRects = $derived(rects.filter((r) => r.page === page))
 
-  async function loadPage(p: number) {
+  $effect(() => {
+    if (!viewportEl) return
+    return attachMiddlePan(viewportEl)
+  })
+
+  async function loadPage(p: number, z = zoom) {
     if (!path) return
     loading = true
     loadError = null
     selectedId = null
     try {
+      const w = previewRenderWidth(z, 1000)
       const [prev, box] = await Promise.all([
-        previewPdf(path, p, 900),
+        previewPdf(path, p, w),
         getPageMediabox(path, p),
       ])
       previewUrl = prev.dataUrl
@@ -291,6 +301,11 @@
 
   function setZoom(next: number) {
     zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(next * 100) / 100))
+    if (zoomTimer) clearTimeout(zoomTimer)
+    zoomTimer = setTimeout(() => {
+      if (!path) return
+      void loadPage(page, zoom)
+    }, 160)
   }
 
   function onWheel(e: WheelEvent) {
@@ -367,7 +382,7 @@
       </div>
     </div>
 
-    <div class="rect-viewport" onwheel={onWheel}>
+    <div class="rect-viewport" bind:this={viewportEl} onwheel={onWheel}>
       <div
         class="rect-surface"
         bind:this={surfaceEl}
@@ -440,7 +455,7 @@
 
     <p class="text-[var(--text-xs)] text-[var(--color-ink-2)]">
       Arrastra en vacío para crear. Clic en un cuadro para moverlo; tiradores para redimensionar.
-      Ctrl + rueda = zoom.
+      Ctrl + rueda = zoom · rueda pulsada = panear.
     </p>
   </div>
 {/if}

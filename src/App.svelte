@@ -19,6 +19,7 @@
   import MarkdownView from './lib/tools/MarkdownView.svelte'
   import AiView from './lib/tools/AiView.svelte'
   import SettingsView from './lib/tools/SettingsView.svelte'
+  import AppContextMenu from './lib/components/AppContextMenu.svelte'
 
   let activeTool = $state<ToolId | null>(null)
 
@@ -139,7 +140,7 @@
           </button>
         </header>
         <div class="mp-canvas-body">
-          <div class="mp-panel">
+          <div class="mp-panel" class:is-wide={activeTool === 'compare' || activeTool === 'redact' || activeTool === 'crop'}>
             {#if activeTool === 'merge'}
               <MergeView />
             {:else if activeTool === 'split'}
@@ -179,3 +180,5 @@
     </div>
   </section>
 </div>
+
+<AppContextMenu />

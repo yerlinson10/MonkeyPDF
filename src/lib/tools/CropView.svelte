@@ -60,9 +60,14 @@
     <PageRectEditor path={paths[0]} mode="single" bind:rects />
   {/if}
 
-  <label class="flex items-center gap-2 text-[var(--text-sm)]">
+  <label class="mp-check">
     <input type="checkbox" bind:checked={applyAll} />
-    Aplicar el mismo recorte a todas las páginas
+    <span class="mp-check-box" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12l5 5L20 7" />
+      </svg>
+    </span>
+    <span class="mp-check-label">Aplicar el mismo recorte a todas las páginas</span>
   </label>
 
   <OutputPicker bind:value={output} defaultName="recortado.pdf" label="PDF de salida" />

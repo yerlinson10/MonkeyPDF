@@ -409,7 +409,7 @@ button:disabled {
 
 .mp-canvas-head p {
   margin: var(--space-2) 0 0;
-  max-width: 36rem;
+  max-width: min(48rem, 100%);
   color: var(--color-ink-2);
   font-size: var(--text-sm);
   font-weight: 500;
@@ -532,7 +532,18 @@ button:disabled {
 }
 
 .mp-panel {
-  max-width: 680px;
+  width: 100%;
+  max-width: min(42rem, 100%);
+}
+
+.mp-panel.is-wide {
+  max-width: none;
+}
+
+@media (min-width: 1280px) {
+  .mp-panel:not(.is-wide) {
+    max-width: min(48rem, 100%);
+  }
 }
 
 /* Inline stamp alert — missing deps, blocking actions */
@@ -762,6 +773,34 @@ button:disabled {
   text-align: left;
 }
 
+.mp-file-main.is-static {
+  cursor: default;
+}
+
+.mp-file-open {
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.mp-file-open:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+.mp-thumb-btn {
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.mp-thumb-btn:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
 .mp-thumb {
   width: 40px;
   height: 52px;
@@ -815,6 +854,14 @@ button:disabled {
   font-weight: 700;
 }
 
+.mp-preview-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
 .mp-preview-pager {
   display: flex;
   align-items: center;
@@ -824,23 +871,47 @@ button:disabled {
 
 .mp-preview-frame {
   min-height: 220px;
-  max-height: 420px;
-  display: grid;
-  place-items: center;
+  max-height: min(60vh, 520px);
+  display: block;
+  padding: 0;
+  overflow: hidden;
+}
+
+.mp-preview-frame.is-live {
+  max-height: none;
+}
+
+.mp-preview-frame.is-live :global(.pdf-viewport) {
+  max-height: min(60vh, 520px);
+  border: none;
   padding: var(--space-4);
-  overflow: auto;
+}
+
+.mp-preview-frame.is-loading {
+  opacity: 0.7;
 }
 
 .mp-preview-img {
+  display: block;
   max-width: 100%;
-  max-height: 380px;
-  border: 1.5px solid var(--color-rule-strong);
-  box-shadow: var(--shadow-stamp);
+  height: auto;
+  border: 1.5px solid var(--color-rule);
   background: var(--color-paper);
+  margin-inline: auto;
 }
 
 .mp-preview-img.is-loading {
   opacity: 0.55;
+}
+
+.mp-preview-hint {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-top: 1.5px solid var(--color-rule);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-ink-2);
+  background: var(--color-paper);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -865,6 +936,103 @@ button:disabled {
 .mp-chip.is-on {
   background: var(--color-accent);
   border-color: var(--color-accent-ink);
+}
+
+/* Hallmark · component: checkbox · genre: playful-técnico · theme: press-shop banana
+ * states: default · hover · focus · active · disabled · loading · error · success
+ * contrast: pass
+ */
+.mp-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--color-ink);
+  user-select: none;
+}
+
+.mp-check input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mp-check-box {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1.5px solid var(--color-ink);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper);
+  box-shadow: 2px 2px 0 var(--color-ink);
+  color: var(--color-accent-ink);
+  transition:
+    background-color var(--dur-ui) var(--ease-hover),
+    border-color var(--dur-ui) var(--ease-hover),
+    box-shadow var(--dur-ui) var(--ease-hover),
+    transform var(--dur-ui) var(--ease-hover);
+}
+
+.mp-check-box svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  opacity: 0;
+  transform: scale(0.85);
+  transition:
+    opacity var(--dur-ui) var(--ease-hover),
+    transform var(--dur-ui) var(--ease-hover);
+}
+
+.mp-check:hover .mp-check-box,
+.mp-check.is-hover .mp-check-box {
+  background: var(--color-accent-soft);
+}
+
+.mp-check input:checked + .mp-check-box {
+  background: var(--color-accent);
+  border-color: var(--color-accent-ink);
+}
+
+.mp-check input:checked + .mp-check-box svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.mp-check input:focus-visible + .mp-check-box,
+.mp-check.is-focus .mp-check-box {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.mp-check:active .mp-check-box,
+.mp-check.is-active .mp-check-box {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--color-ink);
+}
+
+.mp-check:has(input:disabled),
+.mp-check.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mp-check-label {
+  line-height: 1.35;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-check-box,
+  .mp-check-box svg {
+    transition: none;
+  }
 }
 
 /* Hallmark · component: toast · genre: editorial · theme: press-shop banana

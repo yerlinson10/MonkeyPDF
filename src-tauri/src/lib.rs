@@ -9,6 +9,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -41,6 +42,7 @@ pub fn run() {
             commands::redact_pdf,
             commands::crop_pdf,
             commands::compare_pdfs,
+            commands::compare_report,
             commands::get_page_mediabox,
             commands::pdf_to_markdown,
             commands::ai_process_pdf,

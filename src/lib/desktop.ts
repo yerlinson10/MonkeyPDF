@@ -3,19 +3,20 @@
  * Call once at app boot.
  */
 import { invoke } from '@tauri-apps/api/core'
+import { copyText, selectedText } from './clipboard'
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false
+  return !!target.closest('input, textarea, [contenteditable="true"]')
+}
 
 export function installDesktopShell() {
-  // Hide Chromium/WebView right-click menu (Inspect, Reload, Save as…)
-  // Keep OS menu on editable fields for copy/paste.
+  // Block Chromium inspect/reload menu; editable fields keep native menu.
+  // Elsewhere components open our AppContextMenu via oncontextmenu.
   document.addEventListener(
     'contextmenu',
     (event) => {
-      const target = event.target
-      if (!(target instanceof Element)) {
-        event.preventDefault()
-        return
-      }
-      if (target.closest('input, textarea, [contenteditable="true"]')) return
+      if (isEditableTarget(event.target)) return
       event.preventDefault()
     },
     { capture: true },
@@ -26,6 +27,36 @@ export function installDesktopShell() {
     (event) => {
       const key = event.key.toLowerCase()
       const mod = event.ctrlKey || event.metaKey
+      const editable = isEditableTarget(event.target)
+
+      // Always allow clipboard + select-all shortcuts
+      if (mod && (key === 'c' || key === 'x')) {
+        const sel = selectedText()
+        if (sel) {
+          event.preventDefault()
+          void copyText(sel)
+        }
+        // If no selection in editable, let the field handle cut/copy
+        return
+      }
+      if (mod && key === 'v') {
+        // Never block paste — inputs/textarea need it
+        return
+      }
+      if (mod && key === 'a') {
+        if (editable) return
+        // Select all in focused selectable region if any
+        const active = document.activeElement
+        if (active instanceof HTMLElement && active.classList.contains('selectable')) {
+          const range = document.createRange()
+          range.selectNodeContents(active)
+          const sel = window.getSelection()
+          sel?.removeAllRanges()
+          sel?.addRange(range)
+          event.preventDefault()
+        }
+        return
+      }
 
       // Reload
       if (key === 'f5' || (mod && key === 'r')) {
@@ -33,7 +64,7 @@ export function installDesktopShell() {
         return
       }
 
-      // Zoom (also disabled via tauri zoomHotkeysEnabled)
+      // Browser zoom hotkeys (app has its own zoom)
       if (mod && (key === '+' || key === '=' || key === '-' || key === '0')) {
         event.preventDefault()
         return

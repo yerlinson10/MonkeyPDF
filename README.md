@@ -19,7 +19,7 @@ Design system: see [`design.md`](design.md) + [`tokens.css`](tokens.css) (Hallma
 - **OCR** via system [Tesseract](https://github.com/tesseract-ocr/tesseract) (`tesseract` on PATH or `C:\Program Files\Tesseract-OCR\`) → Markdown / TXT / searchable PDF; langs `spa` / `eng` / `spa+eng`
 - **Censura** — black burn + page flatten (no copyable text / form fields under redaction)
 - **Recorte** — CropBox + MediaBox
-- **Comparar** — text diff + visual page diffs → `compare.md` (+ JPGs)
+- **Comparar** — side-by-side A|B, sync scroll, text report + visual heatmap, export `compare.md`
 
 ### Phase 4 — Markdown + IA
 - PDF → Markdown (heuristics)

@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
-  import { getCurrentWebview } from '@tauri-apps/api/webview'
   import { open } from '@tauri-apps/plugin-dialog'
   import {
     fileName,
@@ -9,7 +7,12 @@
     previewFile,
     type FilePreview,
   } from '../api'
+  import { registerDropTarget } from '../dropTargets'
+  import { previewRenderWidth } from '../previewScale'
+  import { readClipboardText } from '../clipboard'
+  import { openContextMenu, type CtxItem } from '../contextMenu'
   import Icon from './Icon.svelte'
+  import PdfPageView from './PdfPageView.svelte'
 
   /* Hallmark · component: file-drop · genre: playful-técnico · theme: press-shop banana
    * states: default · hover · focus · active · disabled · loading · error · success
@@ -41,8 +44,15 @@
   let stage = $state<FilePreview | null>(null)
   let stageLoading = $state(false)
   let stageError = $state<string | null>(null)
+  let zoom = $state(1)
+  let rootEl = $state<HTMLDivElement | null>(null)
+  let renderWidth = $state(previewRenderWidth(1))
+  let zoomTimer: ReturnType<typeof setTimeout> | null = null
 
+  const ZOOM_MIN = 0.5
+  const ZOOM_MAX = 3
   const singleFilled = $derived(!multiple && paths.length === 1)
+  const dropId = `drop-${Math.random().toString(36).slice(2, 9)}`
 
   function acceptExtensions(): string[] {
     return accept
@@ -122,7 +132,7 @@
     }
   }
 
-  async function selectPreview(path: string, page = 1) {
+  async function selectPreview(path: string, page = 1, resetZoom = true) {
     if (!showPreview) {
       activePath = path
       return
@@ -130,11 +140,15 @@
     activePath = path
     stageLoading = true
     stageError = null
+    if (resetZoom) {
+      zoom = 1
+      renderWidth = previewRenderWidth(1)
+    }
     try {
-      const preview = await previewFile(path, page, 720)
+      const preview = await previewFile(path, page, renderWidth)
       stage = preview
       pageCounts = { ...pageCounts, [path]: preview.pageCount }
-      if (page === 1) thumbs = { ...thumbs, [path]: preview.dataUrl }
+      if (page === 1 && zoom <= 1.05) thumbs = { ...thumbs, [path]: preview.dataUrl }
     } catch (e) {
       stage = null
       stageError = String(e)
@@ -147,7 +161,62 @@
     if (!activePath || !stage || stage.kind !== 'pdf') return
     const next = stage.page + delta
     if (next < 1 || next > stage.pageCount) return
-    await selectPreview(activePath, next)
+    await selectPreview(activePath, next, false)
+  }
+
+  function setZoom(next: number) {
+    zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(next * 100) / 100))
+    if (zoomTimer) clearTimeout(zoomTimer)
+    zoomTimer = setTimeout(() => {
+      const w = previewRenderWidth(zoom)
+      if (w === renderWidth || !activePath || !stage) return
+      renderWidth = w
+      void selectPreview(activePath, stage.page, false)
+    }, 160)
+  }
+
+  function onDropContextMenu(e: MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    const items: CtxItem[] = [
+      {
+        id: 'pick',
+        label: 'Elegir archivo…',
+        run: () => void pickFiles(),
+      },
+      {
+        id: 'paste-path',
+        label: 'Pegar ruta del portapapeles',
+        hint: 'Ctrl+V',
+        run: async () => {
+          const raw = await readClipboardText()
+          const parts = raw
+            .split(/[\n\r]+/)
+            .map((s) => s.trim().replace(/^["']|["']$/g, ''))
+            .filter((s) => s.length > 3)
+          if (parts.length === 0) return
+          addPaths(parts)
+        },
+      },
+    ]
+    if (paths.length > 0) {
+      items.push({ id: 'sep', separator: true })
+      items.push({
+        id: 'clear',
+        label: multiple ? 'Quitar todos' : 'Quitar archivo',
+        danger: true,
+        run: () => {
+          paths = []
+        },
+      })
+    }
+    openContextMenu(e.clientX, e.clientY, items)
+  }
+
+  function onPreviewWheel(e: WheelEvent) {
+    if (!(e.ctrlKey || e.metaKey)) return
+    e.preventDefault()
+    setZoom(zoom + (e.deltaY > 0 ? -0.1 : 0.1))
   }
 
   $effect(() => {
@@ -165,31 +234,26 @@
     }
   })
 
-  onMount(() => {
-    let unlisten: (() => void) | undefined
-    getCurrentWebview()
-      .onDragDropEvent((event) => {
-        if (event.payload.type === 'over') dragging = true
-        else if (event.payload.type === 'leave') dragging = false
-        else if (event.payload.type === 'drop') {
-          dragging = false
-          addPaths(event.payload.paths)
-        }
-      })
-      .then((fn) => {
-        unlisten = fn
-      })
-      .catch(() => {})
-
-    return () => unlisten?.()
+  $effect(() => {
+    const el = rootEl
+    if (!el) return
+    return registerDropTarget({
+      id: dropId,
+      el,
+      onDrop: addPaths,
+      onHover: (active) => {
+        dragging = active
+      },
+    })
   })
 </script>
 
-<div class="space-y-3">
+<div class="space-y-3" bind:this={rootEl}>
   {#if !singleFilled}
     <button
       type="button"
       onclick={pickFiles}
+      oncontextmenu={onDropContextMenu}
       class="mp-drop"
       class:is-dragging={dragging}
       class:is-single={!multiple}
@@ -218,22 +282,50 @@
           class:is-preview-active={showPreview && activePath === path}
           class:is-single-chip={singleFilled}
         >
-          <button
-            type="button"
-            class="mp-file-main"
-            onclick={() => (showPreview ? selectPreview(path) : undefined)}
-            disabled={!showPreview}
-          >
-            <span class="mp-thumb" aria-hidden="true">
-              {#if thumbs[path]}
-                <img src={thumbs[path]} alt="" />
-              {:else if loadingThumbs[path]}
-                <span class="mp-thumb-loading"></span>
-              {:else}
-                <Icon name={isPdfPath(path) ? 'jpg-to-pdf' : 'pdf-to-jpg'} size={18} />
-              {/if}
-            </span>
-            <span class="min-w-0 flex-1 text-left">
+          <div class="mp-file-main is-static">
+            {#if showPreview}
+              <button
+                type="button"
+                class="mp-thumb-btn"
+                onclick={() => selectPreview(path)}
+                aria-label="Ver vista previa de {fileName(path)}"
+              >
+                <span class="mp-thumb" aria-hidden="true">
+                  {#if thumbs[path]}
+                    <img src={thumbs[path]} alt="" />
+                  {:else if loadingThumbs[path]}
+                    <span class="mp-thumb-loading"></span>
+                  {:else}
+                    <Icon name={isPdfPath(path) ? 'jpg-to-pdf' : 'pdf-to-jpg'} size={18} />
+                  {/if}
+                </span>
+              </button>
+            {:else}
+              <span class="mp-thumb" aria-hidden="true">
+                {#if thumbs[path]}
+                  <img src={thumbs[path]} alt="" />
+                {:else if loadingThumbs[path]}
+                  <span class="mp-thumb-loading"></span>
+                {:else}
+                  <Icon name={isPdfPath(path) ? 'jpg-to-pdf' : 'pdf-to-jpg'} size={18} />
+                {/if}
+              </span>
+            {/if}
+            <span
+              class="min-w-0 flex-1 text-left"
+              class:mp-file-open={showPreview}
+              role={showPreview ? 'button' : undefined}
+              tabindex={showPreview ? 0 : undefined}
+              onclick={() => {
+                if (showPreview) void selectPreview(path)
+              }}
+              onkeydown={(e) => {
+                if (showPreview && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault()
+                  void selectPreview(path)
+                }
+              }}
+            >
               <span class="mono selectable block truncate text-[var(--text-sm)]" title={path}
                 >{fileName(path)}</span
               >
@@ -243,7 +335,7 @@
                 </span>
               {/if}
             </span>
-          </button>
+          </div>
           {#if singleFilled}
             <button
               type="button"
@@ -288,47 +380,83 @@
     <div class="mp-preview-stage">
       <div class="mp-preview-meta">
         <span class="mono selectable truncate" title={activePath}>{fileName(activePath)}</span>
-        {#if stage && stage.kind === 'pdf' && stage.pageCount > 1}
+        <div class="mp-preview-tools">
+          {#if stage && stage.kind === 'pdf' && stage.pageCount > 1}
+            <div class="mp-preview-pager">
+              <button
+                type="button"
+                class="mp-btn mp-btn-ghost !min-h-8 !px-2"
+                disabled={stageLoading || stage.page <= 1}
+                onclick={() => stagePage(-1)}
+                aria-label="Página anterior"
+              >
+                <Icon name="arrow-up" size={14} />
+              </button>
+              <span class="mono text-[var(--text-xs)]"
+                >{stage.page} / {stage.pageCount}</span
+              >
+              <button
+                type="button"
+                class="mp-btn mp-btn-ghost !min-h-8 !px-2"
+                disabled={stageLoading || stage.page >= stage.pageCount}
+                onclick={() => stagePage(1)}
+                aria-label="Página siguiente"
+              >
+                <Icon name="arrow-down" size={14} />
+              </button>
+            </div>
+          {/if}
           <div class="mp-preview-pager">
             <button
               type="button"
               class="mp-btn mp-btn-ghost !min-h-8 !px-2"
-              disabled={stageLoading || stage.page <= 1}
-              onclick={() => stagePage(-1)}
-              aria-label="Página anterior"
+              disabled={zoom <= ZOOM_MIN}
+              onclick={() => setZoom(zoom - 0.25)}
+              aria-label="Alejar"
             >
-              <Icon name="arrow-up" size={14} />
+              −
             </button>
-            <span class="mono text-[var(--text-xs)]"
-              >{stage.page} / {stage.pageCount}</span
+            <span class="mono text-[var(--text-xs)] w-10 text-center"
+              >{Math.round(zoom * 100)}%</span
             >
             <button
               type="button"
               class="mp-btn mp-btn-ghost !min-h-8 !px-2"
-              disabled={stageLoading || stage.page >= stage.pageCount}
-              onclick={() => stagePage(1)}
-              aria-label="Página siguiente"
+              disabled={zoom >= ZOOM_MAX}
+              onclick={() => setZoom(zoom + 0.25)}
+              aria-label="Acercar"
             >
-              <Icon name="arrow-down" size={14} />
+              +
             </button>
           </div>
-        {/if}
+        </div>
       </div>
 
-      <div class="mp-preview-frame">
-        {#if stageLoading && !stage}
+      {#if stageLoading && !stage}
+        <div class="mp-preview-frame">
           <p class="text-[var(--text-sm)] text-[var(--color-ink-2)]">Renderizando vista…</p>
-        {:else if stageError}
+        </div>
+      {:else if stageError}
+        <div class="mp-preview-frame">
           <p class="text-[var(--text-sm)] text-[var(--color-danger)]">{stageError}</p>
-        {:else if stage}
-          <img
-            class="mp-preview-img"
-            class:is-loading={stageLoading}
+        </div>
+      {:else if stage}
+        <div class="mp-preview-frame is-live" class:is-loading={stageLoading}>
+          <PdfPageView
             src={stage.dataUrl}
             alt="Vista previa de {fileName(activePath)}"
+            widthPercent={zoom * 100}
+            textSpans={stage.textSpans ?? []}
+            onCtrlWheel={onPreviewWheel}
+            onZoomIn={() => setZoom(zoom + 0.25)}
+            onZoomOut={() => setZoom(zoom - 0.25)}
+            onZoomReset={() => setZoom(1)}
           />
-        {/if}
-      </div>
+        </div>
+      {/if}
+      <p class="mp-preview-hint">
+        Rueda pulsada = mover · Ctrl + rueda = zoom (re-render nítido) · “Texto de la página” para copiar
+      </p>
     </div>
   {/if}
 </div>

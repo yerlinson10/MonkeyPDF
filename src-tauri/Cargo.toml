@@ -32,3 +32,4 @@ tauri-plugin-store = "2"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "blocking", "gzip", "brotli", "deflate"] }
 rand = "0.8"
 md-5 = "0.10"
+tauri-plugin-clipboard-manager = "2.3.2"
