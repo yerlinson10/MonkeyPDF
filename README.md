@@ -26,6 +26,12 @@ Design system: see [`design.md`](design.md) + [`tokens.css`](tokens.css) (Hallma
 - Summarize / Translate with your API key (OpenAI · Anthropic · Ollama)
 - Settings stored locally (`tauri-plugin-store`)
 
+### Phase 5 — Firmar + formularios
+- Editor de firma / iniciales / logo (escribir con fuentes cursivas, dibujar, subir imagen)
+- Arrastrar al PDF, mover, redimensionar, eliminar; editar un activo actualiza todas las instancias
+- Detección de campos AcroForm (rellenar + «Firmar aquí» en campos de firma)
+- Horneado visual al PDF (no es firma criptográfica PKCS#7)
+
 ## Prerequisites
 
 - Node.js 20+
@@ -33,6 +39,7 @@ Design system: see [`design.md`](design.md) + [`tokens.css`](tokens.css) (Hallma
 - `src-tauri/resources/pdfium.dll` (Windows x64 included)
 - Optional: [LibreOffice](https://www.libreoffice.org/) for Office conversions
 - Optional: [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) with language packs **spa** and **eng** for OCR
+- Optional: red for cursive signature fonts (Google Fonts: Great Vibes, Dancing Script, Sacramento, Allura)
 
 ## Develop
 
@@ -50,4 +57,4 @@ npm run tauri:build
 ## Architecture
 
 - Frontend: `src/` — Svelte workbench (N3 rail + sheet)
-- Backend: `src-tauri/src/pdf_engine/` — lopdf · pdfium-render · LibreOffice · Tesseract · reqwest
+- Backend: `src-tauri/src/pdf_engine/` — lopdf · pdfium-render · LibreOffice · Tesseract · signatures · reqwest

@@ -70,7 +70,7 @@
     <span class="mp-check-label">Aplicar el mismo recorte a todas las páginas</span>
   </label>
 
-  <OutputPicker bind:value={output} defaultName="recortado.pdf" label="PDF de salida" />
+  <OutputPicker bind:value={output} tool="crop" defaultName="recortado.pdf" label="PDF de salida" />
   <button type="button" class="mp-btn mp-btn-primary" disabled={loading} onclick={run}>
     Recortar
   </button>

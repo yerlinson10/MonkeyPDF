@@ -3,6 +3,7 @@
   import { copyText, selectedText } from '../clipboard'
   import { openContextMenu, type CtxItem } from '../contextMenu'
   import { attachMiddlePan } from '../panScroll'
+  import type { Snippet } from 'svelte'
 
   /* Hallmark · component: pdf-page-view · image + translucent marks + selectable text + pan */
 
@@ -21,6 +22,8 @@
     onZoomReset?: () => void
     /** Show a selectable text block under the page (always copyable). */
     showTextPanel?: boolean
+    /** Overlay content (form fields, stamps) inside the page box. */
+    children?: Snippet
   }
 
   let {
@@ -37,6 +40,7 @@
     onZoomOut,
     onZoomReset,
     showTextPanel = true,
+    children,
   }: Props = $props()
 
   let viewportEl = $state<HTMLDivElement | null>(null)
@@ -149,6 +153,52 @@
   })
 </script>
 
+{#snippet pageBody()}
+  <div class="pdf-page" bind:this={pageEl} style="width: {widthPercent}%;">
+    <img {src} {alt} draggable="false" onload={measure} />
+    {#if showMarks}
+      <svg class="pdf-marks" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true">
+        {#each underlines as u, i (i)}
+          {@const ww = Math.max(u.w, 0.01)}
+          {@const y2 = Math.min((u.y ?? 0) + Math.max(u.h ?? 0.004, 0.003), 0.999)}
+          <line
+            class={underlineTone === 'del' ? 'line-del' : 'line-add'}
+            x1={u.x}
+            y1={y2}
+            x2={u.x + ww}
+            y2={y2}
+          />
+        {/each}
+      </svg>
+    {/if}
+    {#if textSpans.length > 0 && pageH > 0}
+      <div class="pdf-text-layer" aria-label="Texto seleccionable">
+        {#each textSpans as span, i (`${i}-${span.x.toFixed(3)}`)}
+          <span
+            class="pdf-text-span selectable"
+            style="left:{span.x * 100}%;top:{span.y * 100}%;width:{span.w * 100}%;height:{span.h * 100}%;font-size:{Math.max(span.h * pageH, 8)}px;"
+            >{span.text}</span
+          >
+        {/each}
+      </div>
+    {/if}
+    {#if children}
+      <div class="pdf-overlay-layer">
+        {@render children()}
+      </div>
+    {/if}
+  </div>
+  {#if showTextPanel && pageText}
+    <details class="pdf-text-panel">
+      <summary>Texto de la página (seleccionar / copiar)</summary>
+      <pre class="selectable">{pageText}</pre>
+    </details>
+  {/if}
+  {#if toast}
+    <p class="pdf-toast" role="status">{toast}</p>
+  {/if}
+{/snippet}
+
 {#if bare}
   <div
     class="pdf-wrap"
@@ -156,44 +206,7 @@
     aria-label="Vista previa del documento"
     oncontextmenu={onContextMenu}
   >
-    <div class="pdf-page" bind:this={pageEl} style="width: {widthPercent}%;">
-      <img {src} {alt} draggable="false" onload={measure} />
-      {#if showMarks}
-        <svg class="pdf-marks" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true">
-          {#each underlines as u, i (i)}
-            {@const ww = Math.max(u.w, 0.01)}
-            {@const y2 = Math.min((u.y ?? 0) + Math.max(u.h ?? 0.004, 0.003), 0.999)}
-            <line
-              class={underlineTone === 'del' ? 'line-del' : 'line-add'}
-              x1={u.x}
-              y1={y2}
-              x2={u.x + ww}
-              y2={y2}
-            />
-          {/each}
-        </svg>
-      {/if}
-      {#if textSpans.length > 0 && pageH > 0}
-        <div class="pdf-text-layer" aria-label="Texto seleccionable">
-          {#each textSpans as span, i (`${i}-${span.x.toFixed(3)}`)}
-            <span
-              class="pdf-text-span selectable"
-              style="left:{span.x * 100}%;top:{span.y * 100}%;width:{span.w * 100}%;height:{span.h * 100}%;font-size:{Math.max(span.h * pageH, 8)}px;"
-              >{span.text}</span
-            >
-          {/each}
-        </div>
-      {/if}
-    </div>
-    {#if showTextPanel && pageText}
-      <details class="pdf-text-panel">
-        <summary>Texto de la página (seleccionar / copiar)</summary>
-        <pre class="selectable">{pageText}</pre>
-      </details>
-    {/if}
-    {#if toast}
-      <p class="pdf-toast" role="status">{toast}</p>
-    {/if}
+    {@render pageBody()}
   </div>
 {:else}
   <div
@@ -203,44 +216,7 @@
     bind:this={viewportEl}
     oncontextmenu={onContextMenu}
   >
-    <div class="pdf-page" bind:this={pageEl} style="width: {widthPercent}%;">
-      <img {src} {alt} draggable="false" onload={measure} />
-      {#if showMarks}
-        <svg class="pdf-marks" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true">
-          {#each underlines as u, i (i)}
-            {@const ww = Math.max(u.w, 0.01)}
-            {@const y2 = Math.min((u.y ?? 0) + Math.max(u.h ?? 0.004, 0.003), 0.999)}
-            <line
-              class={underlineTone === 'del' ? 'line-del' : 'line-add'}
-              x1={u.x}
-              y1={y2}
-              x2={u.x + ww}
-              y2={y2}
-            />
-          {/each}
-        </svg>
-      {/if}
-      {#if textSpans.length > 0 && pageH > 0}
-        <div class="pdf-text-layer" aria-label="Texto seleccionable">
-          {#each textSpans as span, i (`${i}-${span.x.toFixed(3)}`)}
-            <span
-              class="pdf-text-span selectable"
-              style="left:{span.x * 100}%;top:{span.y * 100}%;width:{span.w * 100}%;height:{span.h * 100}%;font-size:{Math.max(span.h * pageH, 8)}px;"
-              >{span.text}</span
-            >
-          {/each}
-        </div>
-      {/if}
-    </div>
-    {#if showTextPanel && pageText}
-      <details class="pdf-text-panel">
-        <summary>Texto de la página (seleccionar / copiar)</summary>
-        <pre class="selectable">{pageText}</pre>
-      </details>
-    {/if}
-    {#if toast}
-      <p class="pdf-toast" role="status">{toast}</p>
-    {/if}
+    {@render pageBody()}
   </div>
 {/if}
 
@@ -314,6 +290,31 @@
     inset: 0;
     z-index: 2;
     overflow: hidden;
+  }
+
+  .pdf-overlay-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    /* .pdf-page uses line-height:0 for the image; restore normal text for overlays */
+    line-height: normal;
+    font-size: 14px;
+  }
+
+  .pdf-overlay-layer :global(.form-field),
+  .pdf-overlay-layer :global(.placement),
+  .pdf-overlay-layer :global(.sig-here),
+  .pdf-overlay-layer :global(.pl-toolbar),
+  .pdf-overlay-layer :global(.pl-del),
+  .pdf-overlay-layer :global(.pl-tool),
+  .pdf-overlay-layer :global(.pl-edit),
+  .pdf-overlay-layer :global(.pl-date-fmt),
+  .pdf-overlay-layer :global(.handle),
+  .pdf-overlay-layer :global(button),
+  .pdf-overlay-layer :global(input),
+  .pdf-overlay-layer :global(select) {
+    pointer-events: auto;
   }
 
   .pdf-text-span {

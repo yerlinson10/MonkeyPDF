@@ -83,6 +83,6 @@
     <label for="ranges">Rangos (ej. 1-3, 5, 7-9)</label>
     <input id="ranges" class="mp-input mono" bind:value={rangesText} />
   </div>
-  <OutputPicker bind:value={outputDir} mode="directory" label="Carpeta de salida" />
+  <OutputPicker bind:value={outputDir} tool="split" mode="directory" label="Carpeta de salida" />
   <button type="button" class="mp-btn mp-btn-primary" disabled={loading} onclick={run}>Dividir PDF</button>
 </div>

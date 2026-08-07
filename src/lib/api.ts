@@ -29,6 +29,7 @@ export type ToolId =
   | 'redact'
   | 'crop'
   | 'compare'
+  | 'sign'
   | 'settings'
 
 export interface ToolMeta {
@@ -146,6 +147,15 @@ export const TOOLS: ToolMeta[] = [
     group: 'advanced',
   },
   {
+    id: 'sign',
+    title: 'Firmar',
+    short: 'Firma / formulario',
+    description:
+      'Crea firma e iniciales, arrástralas al PDF, rellena campos de formulario y hornea el resultado.',
+    accept: '.pdf',
+    group: 'advanced',
+  },
+  {
     id: 'markdown',
     title: 'Markdown',
     short: 'PDF → MD',
@@ -167,7 +177,7 @@ export const TOOLS: ToolMeta[] = [
     title: 'Ajustes',
     short: 'Configuración',
     description:
-      'Preferencias de la app. Las claves de IA se guardan localmente y solo salen al llamar al proveedor.',
+      'Rutas de salida e IA. Las claves se guardan localmente y solo salen al llamar al proveedor.',
     accept: '',
     group: 'ai',
   },
@@ -372,6 +382,92 @@ export interface PageMediaBox {
 
 export async function getPageMediabox(path: string, page: number): Promise<PageMediaBox> {
   return invoke('get_page_mediabox', { path, page })
+}
+
+export type SignatureKind = 'signature' | 'initials' | 'logo'
+export type SignatureMethod = 'type' | 'draw' | 'upload'
+
+export interface SignatureAsset {
+  id: string
+  kind: SignatureKind
+  name: string | null
+  method: SignatureMethod
+  font: string | null
+  color: string | null
+  pngDataUrl: string
+  source: Record<string, unknown>
+}
+
+export interface NewSignatureAsset {
+  id?: string | null
+  kind: SignatureKind
+  name?: string | null
+  method: SignatureMethod
+  font?: string | null
+  color?: string | null
+  pngDataUrl: string
+  source?: Record<string, unknown>
+}
+
+export async function listSignatures(): Promise<SignatureAsset[]> {
+  return invoke('list_signatures')
+}
+
+export async function saveSignature(asset: NewSignatureAsset): Promise<SignatureAsset> {
+  return invoke('save_signature', { asset })
+}
+
+export async function deleteSignature(id: string): Promise<void> {
+  return invoke('delete_signature', { id })
+}
+
+export type FormFieldKind =
+  | 'text'
+  | 'checkbox'
+  | 'radio'
+  | 'choice'
+  | 'signature'
+  | 'unknown'
+
+export interface FormField {
+  page: number
+  name: string
+  kind: FormFieldKind
+  x: number
+  y: number
+  w: number
+  h: number
+  value: string
+  options: string[]
+}
+
+export async function getFormFields(path: string): Promise<FormField[]> {
+  return invoke('get_form_fields', { path })
+}
+
+export interface SignPlacement {
+  assetId?: string | null
+  pngBytes?: number[] | null
+  pngDataUrl?: string | null
+  page: number
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+export interface FieldFill {
+  name: string
+  value: string
+}
+
+export async function signPdf(
+  path: string,
+  output: string,
+  placements: SignPlacement[],
+  formFills: FieldFill[],
+): Promise<OpResult> {
+  return invoke('sign_pdf', { path, output, placements, formFills })
 }
 
 /** Normalized rect (0–1, top-left) → PDF points (bottom-left). */

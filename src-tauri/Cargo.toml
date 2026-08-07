@@ -26,6 +26,7 @@ lopdf = "0.36"
 pdfium-render = "0.8"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
 base64 = "0.22"
+flate2 = "1"
 tauri-plugin-notification = "2.3.3"
 notify-rust = "4"
 tauri-plugin-store = "2"

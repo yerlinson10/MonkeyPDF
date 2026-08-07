@@ -78,6 +78,6 @@
     />
   </div>
 
-  <OutputPicker bind:value={output} defaultName="rotated.pdf" label="PDF de salida" />
+  <OutputPicker bind:value={output} tool="rotate" defaultName="rotated.pdf" label="PDF de salida" />
   <button type="button" class="mp-btn mp-btn-primary" disabled={loading} onclick={run}>Rotar PDF</button>
 </div>

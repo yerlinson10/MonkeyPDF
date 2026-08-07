@@ -215,6 +215,70 @@ pub async fn get_page_mediabox(
     .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
 }
 
+fn signatures_base(app: &tauri::AppHandle) -> Result<std::path::PathBuf, crate::error::AppError> {
+    use tauri::Manager;
+    app.path()
+        .app_data_dir()
+        .map_err(|e| crate::error::AppError::Pdf(format!("app_data_dir: {e}")))
+}
+
+#[command]
+pub async fn list_signatures(
+    app: tauri::AppHandle,
+) -> Result<Vec<pdf_engine::SignatureAssetMeta>, crate::error::AppError> {
+    let base = signatures_base(&app)?;
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::list_signatures(&base))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn save_signature(
+    app: tauri::AppHandle,
+    asset: pdf_engine::NewSignatureAsset,
+) -> Result<pdf_engine::SignatureAssetMeta, crate::error::AppError> {
+    let base = signatures_base(&app)?;
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::save_signature(&base, asset))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn delete_signature(
+    app: tauri::AppHandle,
+    id: String,
+) -> Result<(), crate::error::AppError> {
+    let base = signatures_base(&app)?;
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::delete_signature(&base, &id))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn get_form_fields(
+    path: String,
+) -> Result<Vec<pdf_engine::FormField>, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::get_form_fields(&path))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn sign_pdf(
+    app: tauri::AppHandle,
+    path: String,
+    output: String,
+    placements: Vec<pdf_engine::SignPlacement>,
+    form_fills: Vec<pdf_engine::FieldFill>,
+) -> Result<OpResult, crate::error::AppError> {
+    let base = signatures_base(&app)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        pdf_engine::sign_pdf(&base, path, output, placements, form_fills)
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
 #[command]
 pub async fn pdf_to_markdown(
     path: String,

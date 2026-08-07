@@ -16,14 +16,25 @@
   import RedactView from './lib/tools/RedactView.svelte'
   import CropView from './lib/tools/CropView.svelte'
   import CompareView from './lib/tools/CompareView.svelte'
+  import SignView from './lib/tools/SignView.svelte'
   import MarkdownView from './lib/tools/MarkdownView.svelte'
   import AiView from './lib/tools/AiView.svelte'
   import SettingsView from './lib/tools/SettingsView.svelte'
   import AppContextMenu from './lib/components/AppContextMenu.svelte'
 
   let activeTool = $state<ToolId | null>(null)
+  let toolQuery = $state('')
 
   const activeMeta = $derived(TOOLS.find((t) => t.id === activeTool) ?? null)
+
+  const filteredTools = $derived.by(() => {
+    const q = toolQuery.trim().toLowerCase()
+    if (!q) return RAIL_TOOLS
+    return RAIL_TOOLS.filter((t) => {
+      const hay = `${t.title} ${t.short} ${t.description} ${t.id}`.toLowerCase()
+      return hay.includes(q) || q.split(/\s+/).every((part) => hay.includes(part))
+    })
+  })
 
   function selectTool(tool: ToolMeta) {
     activeTool = tool.id
@@ -56,11 +67,31 @@
           <span class="w2">PDF</span>
         </div>
       </div>
-      <span class="mp-stamp-tag">Taller local</span>
+      <label class="mp-rail-search">
+        <span class="sr-only">Buscar herramientas</span>
+        <input
+          type="search"
+          class="mp-rail-search-input"
+          placeholder="Buscar herramienta…"
+          bind:value={toolQuery}
+          autocomplete="off"
+          spellcheck="false"
+        />
+        {#if toolQuery}
+          <button
+            type="button"
+            class="mp-rail-search-clear"
+            aria-label="Limpiar búsqueda"
+            onclick={() => (toolQuery = '')}
+          >
+            <Icon name="x" size={14} />
+          </button>
+        {/if}
+      </label>
     </div>
 
     <nav class="mp-tool-list" aria-label="Lista de herramientas">
-      {#each RAIL_TOOLS as tool (tool.id)}
+      {#each filteredTools as tool (tool.id)}
         <button
           type="button"
           class="mp-tool-btn"
@@ -77,6 +108,8 @@
             <small>{tool.short}</small>
           </span>
         </button>
+      {:else}
+        <p class="mp-rail-empty">Sin resultados para “{toolQuery.trim()}”</p>
       {/each}
     </nav>
 
@@ -102,7 +135,7 @@
           <div>
             <span class="kicker">Hoja de trabajo</span>
             <h1>Escoge el sello</h1>
-            <p>Quince herramientas. Un clic. El PDF no sale de tu máquina.</p>
+            <p>Dieciséis herramientas. Un clic. El PDF no sale de tu máquina.</p>
           </div>
         </header>
         <div class="mp-canvas-body">
@@ -115,11 +148,11 @@
               </div>
               <div class="giant">Hazlo<br /><em>local.</em></div>
               <p>
-                Núcleo, suite, OCR/censura y IA con tu propia clave. Menú a la izquierda — resultado
-                en la hoja.
+                Núcleo, suite, firmas, OCR/censura y IA con tu propia clave. Menú a la izquierda —
+                resultado en la hoja.
               </p>
               <div class="mp-hint-row">
-                <span class="mp-hint">01–15 tools</span>
+                <span class="mp-hint">01–16 tools</span>
                 <span class="mp-hint">Tesseract opcional</span>
                 <span class="mp-hint">banana stamp</span>
               </div>
@@ -140,7 +173,13 @@
           </button>
         </header>
         <div class="mp-canvas-body">
-          <div class="mp-panel" class:is-wide={activeTool === 'compare' || activeTool === 'redact' || activeTool === 'crop'}>
+          <div
+            class="mp-panel"
+            class:is-wide={activeTool === 'compare' ||
+              activeTool === 'redact' ||
+              activeTool === 'crop' ||
+              activeTool === 'sign'}
+          >
             {#if activeTool === 'merge'}
               <MergeView />
             {:else if activeTool === 'split'}
@@ -167,6 +206,8 @@
               <CropView />
             {:else if activeTool === 'compare'}
               <CompareView />
+            {:else if activeTool === 'sign'}
+              <SignView />
             {:else if activeTool === 'markdown'}
               <MarkdownView />
             {:else if activeTool === 'ai'}

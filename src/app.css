@@ -244,6 +244,76 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.mp-rail-search {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.mp-rail-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 0.4rem 2rem 0.4rem 0.65rem;
+  border: 1.5px solid var(--color-desk-line);
+  background: color-mix(in srgb, var(--color-desk) 70%, #000);
+  color: var(--color-paper);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  outline: none;
+}
+
+.mp-rail-search-input::placeholder {
+  color: var(--color-desk-mute);
+  opacity: 0.85;
+}
+
+.mp-rail-search-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 2px 2px 0 var(--color-accent);
+}
+
+.mp-rail-search-clear {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  background: transparent;
+  color: var(--color-desk-mute);
+  cursor: pointer;
+  padding: 0;
+}
+
+.mp-rail-search-clear:hover {
+  color: var(--color-accent);
+}
+
+.mp-rail-empty {
+  margin: var(--space-3) var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-desk-mute);
+  line-height: 1.4;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .mp-tool-list {
   display: flex;
   flex-direction: column;
@@ -453,6 +523,67 @@ button:disabled {
   color: var(--color-ink-2);
   font-size: var(--text-sm);
   font-weight: 500;
+}
+
+.mp-settings-advanced {
+  display: grid;
+  gap: 0;
+  border: 1.5px solid var(--color-ink);
+  background: var(--color-paper-2, var(--color-paper));
+}
+
+.mp-settings-advanced-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-align: left;
+}
+
+.mp-settings-advanced-toggle:hover {
+  background: color-mix(in srgb, var(--color-banana) 18%, transparent);
+}
+
+.mp-settings-advanced-hint {
+  margin-right: auto;
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.mp-settings-advanced-body {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-top: 1.5px solid var(--color-rule);
+}
+
+.mp-settings-advanced-note {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.mp-settings-path-row {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.mp-settings-path-row > label {
+  font-size: var(--text-sm);
+  font-weight: 700;
 }
 
 .mp-empty {

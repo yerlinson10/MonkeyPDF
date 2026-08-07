@@ -117,6 +117,7 @@
 
   <OutputPicker
     bind:value={output}
+    tool="ocr"
     defaultName={modeMeta.name}
     label="Archivo de salida"
     filters={[{ name: modeMeta.label, extensions: [modeMeta.ext] }]}

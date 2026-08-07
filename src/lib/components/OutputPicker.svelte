@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import { save, open } from '@tauri-apps/plugin-dialog'
   import Icon from './Icon.svelte'
+  import { joinOutputPath, resolveOutputDir, type OutputToolId } from '../settings'
 
   interface Props {
     mode?: 'file' | 'directory'
@@ -8,6 +10,10 @@
     defaultName?: string
     filters?: Array<{ name: string; extensions: string[] }>
     label?: string
+    /** Herramienta: aplica la ruta por defecto / avanzada de Ajustes. */
+    tool?: OutputToolId
+    /** Si true (default), rellena la ruta al cargar cuando hay carpeta configurada. */
+    autofill?: boolean
   }
 
   let {
@@ -16,15 +22,38 @@
     defaultName = 'output.pdf',
     filters = [{ name: 'PDF', extensions: ['pdf'] }],
     label = 'Archivo de salida',
+    tool,
+    autofill = true,
   }: Props = $props()
 
+  let preferredDir = $state('')
+
+  onMount(() => {
+    void applyPreferredPath()
+  })
+
+  async function applyPreferredPath() {
+    preferredDir = await resolveOutputDir(tool)
+    if (!autofill || !preferredDir || value) return
+    value = mode === 'directory' ? preferredDir : joinOutputPath(preferredDir, defaultName)
+  }
+
   async function pick() {
+    const startDir = preferredDir || (await resolveOutputDir(tool))
+    preferredDir = startDir
+
     if (mode === 'directory') {
-      const dir = await open({ directory: true, multiple: false })
+      const dir = await open({
+        directory: true,
+        multiple: false,
+        defaultPath: startDir || undefined,
+      })
       if (typeof dir === 'string') value = dir
       return
     }
-    const path = await save({ defaultPath: defaultName, filters })
+
+    const suggested = startDir ? joinOutputPath(startDir, defaultName) : defaultName
+    const path = await save({ defaultPath: suggested, filters })
     if (path) value = path
   }
 </script>

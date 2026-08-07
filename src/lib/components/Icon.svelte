@@ -13,6 +13,7 @@
     | 'redact'
     | 'crop'
     | 'compare'
+    | 'sign'
     | 'markdown'
     | 'ai'
     | 'settings'
@@ -96,6 +97,10 @@
     <rect x="3" y="4" width="8" height="16" rx="1" />
     <rect x="13" y="4" width="8" height="16" rx="1" />
     <path d="M6 9h2M6 12h2M16 9h2M16 13h2" />
+  {:else if name === 'sign'}
+    <path d="M4 20h16" />
+    <path d="M6 16c2-4 4-8 6-8s3 2 5 6" />
+    <path d="M14 8l3-3 2 2-3 3" />
   {:else if name === 'markdown'}
     <path d="M4 6h16v12H4z" />
     <path d="M7 15V9l2.5 3L12 9v6M15 12h2m0 0l-1.5-2M17 12l-1.5 2" />

@@ -103,6 +103,7 @@
 
   <OutputPicker
     bind:value={output}
+    tool="protect"
     defaultName={mode === 'protect' ? 'protected.pdf' : 'unlocked.pdf'}
     label="PDF de salida"
   />

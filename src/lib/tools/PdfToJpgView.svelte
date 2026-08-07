@@ -49,6 +49,6 @@
     </div>
   </div>
 
-  <OutputPicker bind:value={outputDir} mode="directory" label="Carpeta de salida" />
+  <OutputPicker bind:value={outputDir} tool="pdf-to-jpg" mode="directory" label="Carpeta de salida" />
   <button type="button" class="mp-btn mp-btn-primary" disabled={loading} onclick={run}>Convertir a JPG</button>
 </div>

@@ -2,6 +2,7 @@ mod ai;
 mod compare;
 mod compress;
 mod crop;
+mod forms;
 mod images_to_pdf;
 mod markdown;
 mod merge;
@@ -13,12 +14,15 @@ mod preview;
 mod protect;
 mod redact;
 mod rotate;
+mod sign;
+mod signatures;
 mod split;
 
 pub use ai::{run_ai_on_pdf, write_text_file, AiResult};
 pub use compare::{compare_pdfs, compare_report, CompareReport};
 pub use compress::compress_pdf;
 pub use crop::{crop_pdf, page_mediabox, CropBox};
+pub use forms::{fill_form, get_form_fields, FieldFill, FormField, FormFieldKind};
 pub use images_to_pdf::images_to_pdf;
 pub use markdown::pdf_to_markdown;
 pub use merge::merge_pdfs;
@@ -30,6 +34,11 @@ pub use preview::{preview_image, preview_pdf};
 pub use protect::{protect_pdf, unlock_pdf};
 pub use redact::{redact_pdf, RedactRegion};
 pub use rotate::rotate_pdf;
+pub use sign::{sign_pdf, SignPlacement};
+pub use signatures::{
+    delete_signature, list_signatures, load_png, save_signature, NewSignatureAsset,
+    SignatureAssetMeta, SignatureKind, SignatureMethod,
+};
 pub use split::split_pdf;
 
 use crate::error::AppError;

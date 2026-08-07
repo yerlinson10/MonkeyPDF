@@ -40,6 +40,7 @@
   </p>
   <OutputPicker
     bind:value={output}
+    tool="markdown"
     defaultName="documento.md"
     label="Markdown de salida"
     filters={[{ name: 'Markdown', extensions: ['md'] }]}

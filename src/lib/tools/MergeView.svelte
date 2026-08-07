@@ -35,6 +35,6 @@
 <div class="space-y-5">
   <ResultBanner {loading} {error} {result} toolLabel="Unir PDF" />
   <FileDropZone bind:paths accept=".pdf" multiple={true} label="Arrastra PDFs para unir (ordenables)" />
-  <OutputPicker bind:value={output} defaultName="merged.pdf" label="PDF de salida" />
+  <OutputPicker bind:value={output} tool="merge" defaultName="merged.pdf" label="PDF de salida" />
   <button type="button" class="mp-btn mp-btn-primary" disabled={loading} onclick={run}>Unir PDFs</button>
 </div>

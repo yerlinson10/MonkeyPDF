@@ -45,6 +45,6 @@
     </p>
   </div>
 
-  <OutputPicker bind:value={output} defaultName="compressed.pdf" label="PDF de salida" />
+  <OutputPicker bind:value={output} tool="compress" defaultName="compressed.pdf" label="PDF de salida" />
   <button type="button" class="mp-btn mp-btn-primary" disabled={loading} onclick={run}>Comprimir PDF</button>
 </div>

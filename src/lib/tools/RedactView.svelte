@@ -70,7 +70,7 @@
     <PageRectEditor path={paths[0]} mode="multi" bind:rects />
   {/if}
 
-  <OutputPicker bind:value={output} defaultName="censurado.pdf" label="PDF de salida" />
+  <OutputPicker bind:value={output} tool="redact" defaultName="censurado.pdf" label="PDF de salida" />
   <button type="button" class="mp-btn mp-btn-primary" disabled={loading} onclick={run}>
     Censurar
   </button>

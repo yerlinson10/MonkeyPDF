@@ -76,7 +76,7 @@
     <input id="fs" class="mp-range" type="range" min="8" max="24" step="1" bind:value={fontSize} />
   </div>
 
-  <OutputPicker bind:value={output} defaultName="numbered.pdf" label="PDF de salida" />
+  <OutputPicker bind:value={output} tool="page-numbers" defaultName="numbered.pdf" label="PDF de salida" />
   <button type="button" class="mp-btn mp-btn-primary" disabled={loading} onclick={run}>
     Numerar páginas
   </button>

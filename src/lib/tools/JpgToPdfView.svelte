@@ -48,6 +48,7 @@
   {/if}
   <OutputPicker
     bind:value={output}
+    tool="jpg-to-pdf"
     defaultName="images.pdf"
     label="PDF de salida"
     filters={[{ name: 'PDF', extensions: ['pdf'] }]}

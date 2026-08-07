@@ -503,6 +503,7 @@
         <div class="compare-export">
           <OutputPicker
             bind:value={outputDir}
+            tool="compare"
             mode="directory"
             label="Exportar informe"
           />

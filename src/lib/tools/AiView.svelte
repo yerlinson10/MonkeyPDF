@@ -110,6 +110,8 @@
 
   <OutputPicker
     bind:value={output}
+    tool="ai"
+    autofill={false}
     defaultName={action === 'summarize' ? 'resumen.md' : 'traduccion.md'}
     label="Guardar resultado (opcional)"
     filters={[{ name: 'Markdown / texto', extensions: ['md', 'txt'] }]}
