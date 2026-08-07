@@ -4,19 +4,18 @@ overview: "Tres herramientas nuevas adaptadas al diseño Hallmark (Syne, banana 
 todos:
   - id: repair
     content: repair.rs + commands + RepairView
-    status: pending
+    status: completed
   - id: watermark
     content: watermark.rs + commands + WatermarkView
-    status: pending
+    status: completed
   - id: organize
     content: organize.rs + commands + OrganizeView
-    status: pending
+    status: completed
   - id: docs-tests
     content: Rail/Icon/App/design.md/README + tests + build
-    status: pending
+    status: completed
 isProject: false
 ---
-
 
 # MonkeyPDF — Fase 6: Reparar, Marca de agua, Ordenar páginas
 

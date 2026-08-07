@@ -2,16 +2,19 @@
   export type IconName =
     | 'merge'
     | 'split'
+    | 'organize'
     | 'rotate'
     | 'compress'
     | 'pdf-to-jpg'
     | 'jpg-to-pdf'
     | 'protect'
+    | 'repair'
     | 'page-numbers'
     | 'office'
     | 'ocr'
     | 'redact'
     | 'crop'
+    | 'watermark'
     | 'compare'
     | 'sign'
     | 'markdown'
@@ -55,6 +58,12 @@
     <path d="M12 3v18" />
     <path d="M5 8l7 4 7-4" />
     <path d="M5 16l7-4 7 4" />
+  {:else if name === 'organize'}
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <rect x="14" y="14" width="7" height="7" rx="1" />
+    <path d="M10 6.5h4M14 17.5h-4" />
   {:else if name === 'rotate'}
     <path d="M21 12a9 9 0 1 1-3-6.7" />
     <path d="M21 3v6h-6" />
@@ -75,6 +84,8 @@
     <rect x="5" y="11" width="14" height="10" rx="1.5" />
     <path d="M8 11V8a4 4 0 0 1 8 0v3" />
     <circle cx="12" cy="16" r="1.2" fill="currentColor" stroke="none" />
+  {:else if name === 'repair'}
+    <path d="M14.7 6.3a4 4 0 0 0-5.6 5.6L3 18l3 3 6.1-6.1a4 4 0 0 0 5.6-5.6l-2.5 2.5-2.5-2.5 2.5-2.5z" />
   {:else if name === 'page-numbers'}
     <rect x="5" y="3" width="14" height="18" rx="1.5" />
     <path d="M9 8h6M9 12h6M9 16h3" />
@@ -93,6 +104,9 @@
   {:else if name === 'crop'}
     <path d="M6 3v12a3 3 0 0 0 3 3h12" />
     <path d="M18 21V9a3 3 0 0 0-3-3H3" />
+  {:else if name === 'watermark'}
+    <rect x="5" y="3" width="12" height="16" rx="1.5" />
+    <path d="M14 14c0-2.2 1.8-3.5 1.8-5.2A1.8 1.8 0 0 0 14 7a1.8 1.8 0 0 0-1.8 1.8c0 1.7 1.8 3 1.8 5.2z" />
   {:else if name === 'compare'}
     <rect x="3" y="4" width="8" height="16" rx="1" />
     <rect x="13" y="4" width="8" height="16" rx="1" />

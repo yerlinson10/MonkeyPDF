@@ -8,15 +8,18 @@ mod markdown;
 mod merge;
 mod ocr;
 mod office;
+mod organize;
 mod page_numbers;
 mod pdf_to_images;
 mod preview;
 mod protect;
 mod redact;
+mod repair;
 mod rotate;
 mod sign;
 mod signatures;
 mod split;
+mod watermark;
 
 pub use ai::{run_ai_on_pdf, write_text_file, AiResult};
 pub use compare::{compare_pdfs, compare_report, CompareReport};
@@ -28,11 +31,13 @@ pub use markdown::pdf_to_markdown;
 pub use merge::merge_pdfs;
 pub use ocr::{ocr_pdf, tesseract_available};
 pub use office::{convert_with_libreoffice, soffice_available};
+pub use organize::{organize_pdf, PageRef};
 pub use page_numbers::add_page_numbers;
 pub use pdf_to_images::pdf_to_jpg;
 pub use preview::{preview_image, preview_pdf};
 pub use protect::{protect_pdf, unlock_pdf};
 pub use redact::{redact_pdf, RedactRegion};
+pub use repair::{diagnose_pdf, repair_pdf, Diagnosis};
 pub use rotate::rotate_pdf;
 pub use sign::{sign_pdf, SignPlacement};
 pub use signatures::{
@@ -40,6 +45,7 @@ pub use signatures::{
     SignatureAssetMeta, SignatureKind, SignatureMethod,
 };
 pub use split::split_pdf;
+pub use watermark::{watermark_pdf, WatermarkSpec};
 
 use crate::error::AppError;
 use pdfium_render::prelude::*;

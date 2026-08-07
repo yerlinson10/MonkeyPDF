@@ -16,11 +16,13 @@ export interface AiResult {
 export type ToolId =
   | 'merge'
   | 'split'
+  | 'organize'
   | 'rotate'
   | 'compress'
   | 'pdf-to-jpg'
   | 'jpg-to-pdf'
   | 'protect'
+  | 'repair'
   | 'page-numbers'
   | 'office'
   | 'markdown'
@@ -28,6 +30,7 @@ export type ToolId =
   | 'ocr'
   | 'redact'
   | 'crop'
+  | 'watermark'
   | 'compare'
   | 'sign'
   | 'settings'
@@ -55,6 +58,14 @@ export const TOOLS: ToolMeta[] = [
     title: 'Dividir PDF',
     short: 'Por rangos',
     description: 'Extrae rangos de páginas a nuevos PDFs.',
+    accept: '.pdf',
+    group: 'core',
+  },
+  {
+    id: 'organize',
+    title: 'Ordenar',
+    short: 'Páginas / archivos',
+    description: 'Reordena, rota o elimina páginas; mezcla varios PDFs en un solo documento.',
     accept: '.pdf',
     group: 'core',
   },
@@ -99,6 +110,14 @@ export const TOOLS: ToolMeta[] = [
     group: 'suite',
   },
   {
+    id: 'repair',
+    title: 'Reparar',
+    short: 'Diagnóstico',
+    description: 'Diagnostica y repara PDFs dañados (xref, streams, huérfanos) con re-guardado limpio.',
+    accept: '.pdf',
+    group: 'suite',
+  },
+  {
     id: 'page-numbers',
     title: 'Numerar',
     short: 'Página N',
@@ -135,6 +154,14 @@ export const TOOLS: ToolMeta[] = [
     title: 'Recorte',
     short: 'CropBox',
     description: 'Recorta páginas fijando CropBox y MediaBox al área seleccionada.',
+    accept: '.pdf',
+    group: 'advanced',
+  },
+  {
+    id: 'watermark',
+    title: 'Marca de agua',
+    short: 'Texto / imagen',
+    description: 'Inserta marca de agua de texto o imagen con posición, mosaico, transparencia y rotación.',
     accept: '.pdf',
     group: 'advanced',
   },
@@ -468,6 +495,71 @@ export async function signPdf(
   formFills: FieldFill[],
 ): Promise<OpResult> {
   return invoke('sign_pdf', { path, output, placements, formFills })
+}
+
+export interface Diagnosis {
+  encrypted: boolean
+  pdfVersion: string
+  pageCount: number
+  hasXrefStream: boolean
+  hasEof: boolean
+  brokenObjects: number
+  orphanObjects: number
+  missingPages: number
+  linearized: boolean
+  warnings: string[]
+}
+
+export async function diagnosePdf(path: string): Promise<Diagnosis> {
+  return invoke('diagnose_pdf', { path })
+}
+
+export async function repairPdf(
+  path: string,
+  output: string,
+  password: string | null,
+): Promise<OpResult> {
+  return invoke('repair_pdf', { path, output, password })
+}
+
+export interface WatermarkSpec {
+  mode: 'text' | 'image'
+  text?: string | null
+  font?: string | null
+  size?: number | null
+  bold?: boolean
+  italic?: boolean
+  underline?: boolean
+  color?: string | null
+  imagePath?: string | null
+  position: number
+  mosaic: boolean
+  transparency: number
+  rotation: number
+  pageFrom?: number | null
+  pageTo?: number | null
+  layer: 'above' | 'below'
+}
+
+export async function watermarkPdf(
+  path: string,
+  output: string,
+  spec: WatermarkSpec,
+): Promise<OpResult> {
+  return invoke('watermark_pdf', { path, output, spec })
+}
+
+export interface OrganizePageRef {
+  sourcePath: string
+  page: number
+  rotate?: number
+}
+
+export async function organizePdf(
+  pages: OrganizePageRef[],
+  output: string,
+): Promise<OpResult> {
+  return invoke('organize_pdf', { pages, output })
 }
 
 /** Normalized rect (0–1, top-left) → PDF points (bottom-left). */

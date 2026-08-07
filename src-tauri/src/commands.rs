@@ -280,6 +280,47 @@ pub async fn sign_pdf(
 }
 
 #[command]
+pub async fn diagnose_pdf(
+    path: String,
+) -> Result<pdf_engine::Diagnosis, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::diagnose_pdf(path))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn repair_pdf(
+    path: String,
+    output: String,
+    password: Option<String>,
+) -> Result<OpResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::repair_pdf(path, output, password))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn watermark_pdf(
+    path: String,
+    output: String,
+    spec: pdf_engine::WatermarkSpec,
+) -> Result<OpResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::watermark_pdf(path, output, spec))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn organize_pdf(
+    pages: Vec<pdf_engine::PageRef>,
+    output: String,
+) -> Result<OpResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::organize_pdf(pages, output))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
 pub async fn pdf_to_markdown(
     path: String,
     output: String,

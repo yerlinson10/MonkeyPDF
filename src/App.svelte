@@ -5,16 +5,19 @@
   import Icon from './lib/components/Icon.svelte'
   import MergeView from './lib/tools/MergeView.svelte'
   import SplitView from './lib/tools/SplitView.svelte'
+  import OrganizeView from './lib/tools/OrganizeView.svelte'
   import RotateView from './lib/tools/RotateView.svelte'
   import CompressView from './lib/tools/CompressView.svelte'
   import PdfToJpgView from './lib/tools/PdfToJpgView.svelte'
   import JpgToPdfView from './lib/tools/JpgToPdfView.svelte'
   import ProtectView from './lib/tools/ProtectView.svelte'
+  import RepairView from './lib/tools/RepairView.svelte'
   import PageNumbersView from './lib/tools/PageNumbersView.svelte'
   import OfficeView from './lib/tools/OfficeView.svelte'
   import OcrView from './lib/tools/OcrView.svelte'
   import RedactView from './lib/tools/RedactView.svelte'
   import CropView from './lib/tools/CropView.svelte'
+  import WatermarkView from './lib/tools/WatermarkView.svelte'
   import CompareView from './lib/tools/CompareView.svelte'
   import SignView from './lib/tools/SignView.svelte'
   import MarkdownView from './lib/tools/MarkdownView.svelte'
@@ -135,7 +138,7 @@
           <div>
             <span class="kicker">Hoja de trabajo</span>
             <h1>Escoge el sello</h1>
-            <p>Dieciséis herramientas. Un clic. El PDF no sale de tu máquina.</p>
+            <p>Diecinueve herramientas. Un clic. El PDF no sale de tu máquina.</p>
           </div>
         </header>
         <div class="mp-canvas-body">
@@ -148,11 +151,11 @@
               </div>
               <div class="giant">Hazlo<br /><em>local.</em></div>
               <p>
-                Núcleo, suite, firmas, OCR/censura y IA con tu propia clave. Menú a la izquierda —
+                Núcleo, suite, firmas, marcas de agua, OCR/censura y IA. Menú a la izquierda —
                 resultado en la hoja.
               </p>
               <div class="mp-hint-row">
-                <span class="mp-hint">01–16 tools</span>
+                <span class="mp-hint">01–19 tools</span>
                 <span class="mp-hint">Tesseract opcional</span>
                 <span class="mp-hint">banana stamp</span>
               </div>
@@ -178,12 +181,16 @@
             class:is-wide={activeTool === 'compare' ||
               activeTool === 'redact' ||
               activeTool === 'crop' ||
-              activeTool === 'sign'}
+              activeTool === 'sign' ||
+              activeTool === 'watermark' ||
+              activeTool === 'organize'}
           >
             {#if activeTool === 'merge'}
               <MergeView />
             {:else if activeTool === 'split'}
               <SplitView />
+            {:else if activeTool === 'organize'}
+              <OrganizeView />
             {:else if activeTool === 'rotate'}
               <RotateView />
             {:else if activeTool === 'compress'}
@@ -194,6 +201,8 @@
               <JpgToPdfView />
             {:else if activeTool === 'protect'}
               <ProtectView />
+            {:else if activeTool === 'repair'}
+              <RepairView />
             {:else if activeTool === 'page-numbers'}
               <PageNumbersView />
             {:else if activeTool === 'office'}
@@ -204,6 +213,8 @@
               <RedactView />
             {:else if activeTool === 'crop'}
               <CropView />
+            {:else if activeTool === 'watermark'}
+              <WatermarkView />
             {:else if activeTool === 'compare'}
               <CompareView />
             {:else if activeTool === 'sign'}

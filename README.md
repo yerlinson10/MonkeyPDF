@@ -32,6 +32,11 @@ Design system: see [`design.md`](design.md) + [`tokens.css`](tokens.css) (Hallma
 - Detección de campos AcroForm (rellenar + «Firmar aquí» en campos de firma)
 - Horneado visual al PDF (no es firma criptográfica PKCS#7)
 
+### Phase 6 — Reparar, Marca de agua, Ordenar
+- **Reparar** — diagnóstico + re-guardado limpio + reparación best-effort (xref, streams, huérfanos)
+- **Marca de agua** — texto o imagen · posición 3×3 · mosaico · transparencia · rotación · capa
+- **Ordenar** — multi-archivo, grid de páginas arrastrable, rotar/borrar/insertar
+
 ## Prerequisites
 
 - Node.js 20+
