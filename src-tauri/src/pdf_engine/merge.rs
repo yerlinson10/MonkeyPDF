@@ -23,6 +23,27 @@ pub fn merge_pdfs(paths: Vec<String>, output: String) -> Result<OpResult, AppErr
     let output_path = Path::new(&output);
     ensure_parent_dir(output_path)?;
 
+    let page_count = merge_documents(documents, output_path)?;
+
+    Ok(OpResult::new(
+        vec![output],
+        page_count,
+        started.elapsed().as_millis() as u64,
+    ))
+}
+
+/// Merge already-loaded documents into a single PDF at `output_path`.
+/// Returns the total page count written.
+pub(crate) fn merge_documents(
+    documents: Vec<Document>,
+    output_path: &Path,
+) -> Result<u32, AppError> {
+    if documents.is_empty() {
+        return Err(AppError::InvalidInput(
+            "No hay documentos para unir".into(),
+        ));
+    }
+
     let mut max_id = 1u32;
     let mut documents_pages = BTreeMap::new();
     let mut documents_objects = BTreeMap::new();
@@ -122,9 +143,5 @@ pub fn merge_pdfs(paths: Vec<String>, output: String) -> Result<OpResult, AppErr
     document.compress();
     document.save(output_path)?;
 
-    Ok(OpResult::new(
-        vec![output],
-        page_count,
-        started.elapsed().as_millis() as u64,
-    ))
+    Ok(page_count)
 }

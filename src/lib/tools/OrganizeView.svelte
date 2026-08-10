@@ -31,18 +31,23 @@
 
   let dragId = $state<string | null>(null)
   let insertAt = $state<number | null>(null)
+  let builtKey = ''
 
   $effect(() => {
     const list = [...paths]
+    const key = list.join('\0')
     if (list.length === 0) {
       pages = []
       baseline = []
+      builtKey = ''
       return
     }
-    void rebuildFromPaths(list)
+    // Skip rebuild when insert only appends a path already reflected in pages
+    if (key === builtKey) return
+    void rebuildFromPaths(list, key)
   })
 
-  async function rebuildFromPaths(list: string[]) {
+  async function rebuildFromPaths(list: string[], key: string) {
     building = true
     error = null
     try {
@@ -70,6 +75,7 @@
       }
       pages = items
       baseline = items.map((p) => ({ ...p }))
+      builtKey = key
     } catch (e) {
       error = String(e)
     } finally {
@@ -93,21 +99,31 @@
     pages = pages.filter((p) => p.id !== id)
   }
 
-  function onDragStart(id: string) {
+  function startDrag(e: PointerEvent, id: string) {
+    if (e.button !== 0) return
+    const t = e.target as HTMLElement | null
+    if (t?.closest('button')) return
+    e.preventDefault()
     dragId = id
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
   }
 
-  function onDragOver(index: number) {
+  function onDragMove(e: PointerEvent) {
     if (dragId == null) return
+    const el = document.elementFromPoint(e.clientX, e.clientY)
+    const slot = el?.closest('[data-org-id]') as HTMLElement | null
+    const overId = slot?.dataset.orgId
+    if (!overId || overId === dragId) return
     const from = pages.findIndex((p) => p.id === dragId)
-    if (from < 0 || from === index) return
+    const to = pages.findIndex((p) => p.id === overId)
+    if (from < 0 || to < 0 || from === to) return
     const next = [...pages]
     const [item] = next.splice(from, 1)
-    next.splice(index, 0, item)
+    next.splice(to, 0, item)
     pages = next
   }
 
-  function onDragEnd() {
+  function endDrag() {
     dragId = null
   }
 
@@ -141,7 +157,11 @@
       const next = [...pages]
       next.splice(index, 0, ...extras)
       pages = next
-      if (!paths.includes(file)) paths = [...paths, file]
+      if (!paths.includes(file)) {
+        const nextPaths = [...paths, file]
+        builtKey = nextPaths.join('\0')
+        paths = nextPaths
+      }
     } catch (e) {
       error = String(e)
     } finally {
@@ -155,6 +175,7 @@
     const next = [...paths]
     const [item] = next.splice(from, 1)
     next.splice(to, 0, item)
+    builtKey = '' // force full rebuild in file order
     paths = next
   }
 
@@ -191,7 +212,13 @@
   <ResultBanner {loading} {error} {result} toolLabel="Ordenar PDF" />
   <div class="org-main">
     <div class="org-workspace">
-      <FileDropZone bind:paths accept=".pdf" multiple={true} label="Arrastra uno o más PDFs" />
+      <FileDropZone
+        bind:paths
+        accept=".pdf"
+        multiple={true}
+        label="Arrastra uno o más PDFs"
+        showPreview={false}
+      />
       {#if building}
         <p class="hint">Cargando miniaturas…</p>
       {/if}
@@ -210,13 +237,11 @@
             <div
               class="thumb"
               class:is-dragging={dragId === p.id}
-              draggable="true"
-              ondragstart={() => onDragStart(p.id)}
-              ondragover={(e) => {
-                e.preventDefault()
-                onDragOver(i)
-              }}
-              ondragend={onDragEnd}
+              data-org-id={p.id}
+              onpointerdown={(e) => startDrag(e, p.id)}
+              onpointermove={onDragMove}
+              onpointerup={endDrag}
+              onpointercancel={endDrag}
             >
               <div class="thumb-actions">
                 <button type="button" title="Rotar" onclick={() => rotatePage(p.id)}>↻</button>
@@ -307,16 +332,28 @@
     cursor: grab;
     position: relative;
     color: var(--color-ink);
+    touch-action: none;
+    user-select: none;
   }
-  .thumb.is-dragging { opacity: 0.55; }
+  .thumb.is-dragging {
+    opacity: 0.55;
+    cursor: grabbing;
+    z-index: 3;
+  }
   .thumb-body {
     height: 150px;
     display: grid;
     place-items: center;
     overflow: hidden;
     background: #f7f7f7;
+    pointer-events: none;
   }
-  .thumb-body img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .thumb-body img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    -webkit-user-drag: none;
+  }
   .thumb-ph { font-weight: 700; font-size: 12px; }
   .thumb-meta {
     display: flex;
