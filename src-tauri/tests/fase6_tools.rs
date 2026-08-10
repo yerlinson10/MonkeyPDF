@@ -321,6 +321,7 @@ fn watermark_text_smoke() {
             page_from: Some(1),
             page_to: Some(1),
             layer: "above".into(),
+            image_scale: 28.0,
         },
     )
     .expect("watermark");

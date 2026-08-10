@@ -2,6 +2,7 @@ use crate::error::{AppError, FilePreview, PreviewTextSpan};
 use crate::pdf_engine::{create_pdfium, ensure_image_path, ensure_pdf_path};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use image::codecs::jpeg::JpegEncoder;
+use image::codecs::png::PngEncoder;
 use image::imageops::FilterType;
 use image::{DynamicImage, ImageEncoder};
 use pdfium_render::prelude::*;
@@ -69,7 +70,12 @@ pub fn preview_image(path: String, max_width: u32) -> Result<FilePreview, AppErr
     } else {
         img
     };
-    let data_url = image_to_jpeg_data_url(&resized, 85)?;
+    // JPEG discards alpha → black/opaque matte on transparent PNGs.
+    let data_url = if resized.color().has_alpha() {
+        image_to_png_data_url(&resized)?
+    } else {
+        image_to_jpeg_data_url(&resized, 85)?
+    };
 
     Ok(FilePreview {
         data_url,
@@ -163,4 +169,20 @@ fn image_to_jpeg_data_url(img: &DynamicImage, quality: u8) -> Result<String, App
         .map_err(|e| AppError::Image(e.to_string()))?;
     let b64 = STANDARD.encode(buf.into_inner());
     Ok(format!("data:image/jpeg;base64,{b64}"))
+}
+
+fn image_to_png_data_url(img: &DynamicImage) -> Result<String, AppError> {
+    let rgba = img.to_rgba8();
+    let mut buf = Cursor::new(Vec::new());
+    let encoder = PngEncoder::new(&mut buf);
+    encoder
+        .write_image(
+            rgba.as_raw(),
+            rgba.width(),
+            rgba.height(),
+            image::ExtendedColorType::Rgba8,
+        )
+        .map_err(|e| AppError::Image(e.to_string()))?;
+    let b64 = STANDARD.encode(buf.into_inner());
+    Ok(format!("data:image/png;base64,{b64}"))
 }

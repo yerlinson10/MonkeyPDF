@@ -544,6 +544,8 @@ export interface WatermarkSpec {
   pageFrom?: number | null
   pageTo?: number | null
   layer: 'above' | 'below'
+  /** Image width as % of page width (5–100). */
+  imageScale?: number
 }
 
 export async function watermarkPdf(

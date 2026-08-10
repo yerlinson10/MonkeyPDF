@@ -38,6 +38,9 @@ pub struct WatermarkSpec {
     /// above | below
     #[serde(default = "default_layer")]
     pub layer: String,
+    /// Image width as % of page width (5–100). Ignored for text mode.
+    #[serde(default = "default_image_scale")]
+    pub image_scale: f32,
 }
 
 fn default_position() -> u32 {
@@ -48,6 +51,9 @@ fn default_transparency() -> u32 {
 }
 fn default_layer() -> String {
     "above".into()
+}
+fn default_image_scale() -> f32 {
+    28.0
 }
 
 pub fn watermark_pdf(
@@ -94,11 +100,16 @@ pub fn watermark_pdf(
     let mosaic = spec.mosaic;
     let below = spec.layer.eq_ignore_ascii_case("below");
 
-    // ExtGState for transparency
+    // ExtGState for transparency. "Below" uses Multiply so the mark reads as
+    // stamped under ink even when page streams paint an opaque white background
+    // (true content-prepending would hide the watermark entirely).
     let mut gs_dict = Dictionary::new();
     gs_dict.set("Type", "ExtGState");
     gs_dict.set("ca", Object::Real(alpha));
     gs_dict.set("CA", Object::Real(alpha));
+    if below {
+        gs_dict.set("BM", Object::Name(b"Multiply".to_vec()));
+    }
     let gs_id = doc.add_object(gs_dict);
 
     let (r, g, b) = parse_color(spec.color.as_deref().unwrap_or("#1a1a1a"));
@@ -119,6 +130,8 @@ pub fn watermark_pdf(
     font_dict.set("Subtype", "Type1");
     font_dict.set("BaseFont", base_font);
     let font_id = doc.add_object(font_dict);
+
+    let image_scale = spec.image_scale.clamp(5.0, 100.0) / 100.0;
 
     let image_xobj = if mode == "image" {
         let img_path = spec
@@ -156,8 +169,19 @@ pub fn watermark_pdf(
                 spec.underline,
             )
         } else {
-            let (iw, ih, img_name) = image_xobj.as_ref().unwrap();
-            build_image_ops(*iw, *ih, img_name, pw, ph, position, mosaic, rotation)
+            let (img_id, iw, ih, img_name) = image_xobj.as_ref().unwrap();
+            build_image_ops(
+                *img_id,
+                *iw,
+                *ih,
+                img_name,
+                pw,
+                ph,
+                position,
+                mosaic,
+                rotation,
+                image_scale,
+            )
         };
 
         let mut ops = vec![
@@ -179,9 +203,8 @@ pub fn watermark_pdf(
             content_id,
             font_id,
             gs_id,
-            image_xobj.as_ref().map(|(_, _, n)| n.as_str()),
-            image_xobj.as_ref().map(|(id, _, _)| *id),
-            below,
+            image_xobj.as_ref().map(|(_, _, _, n)| n.as_str()),
+            image_xobj.as_ref().map(|(id, _, _, _)| *id),
         )?;
         applied += 1;
     }
@@ -288,17 +311,24 @@ fn build_text_ops(
 
 fn build_image_ops(
     image_id: ObjectId,
-    _ih: u32,
+    iw: u32,
+    ih: u32,
     name: &str,
     pw: f32,
     ph: f32,
     position: u32,
     mosaic: bool,
     rotation: f32,
+    image_scale: f32,
 ) -> Vec<Operation> {
     let _ = image_id;
-    let draw_w = (pw * 0.28).clamp(60.0, 220.0);
-    let draw_h = draw_w * 0.6;
+    let aspect = if iw > 0 {
+        ih as f32 / iw as f32
+    } else {
+        0.6
+    };
+    let draw_w = (pw * image_scale).clamp(24.0, pw * 0.95);
+    let draw_h = (draw_w * aspect).clamp(12.0, ph * 0.95);
     let positions = if mosaic {
         mosaic_positions(pw, ph, draw_w, draw_h)
     } else {
@@ -379,7 +409,7 @@ fn anchor_point(position: u32, pw: f32, ph: f32, w: f32, h: f32) -> (f32, f32) {
     (x.max(0.0), y.max(0.0))
 }
 
-fn embed_image(doc: &mut Document, bytes: &[u8]) -> Result<(ObjectId, u32, String), AppError> {
+fn embed_image(doc: &mut Document, bytes: &[u8]) -> Result<(ObjectId, u32, u32, String), AppError> {
     let img = ImageReader::new(Cursor::new(bytes))
         .with_guessed_format()
         .map_err(|e| AppError::Image(e.to_string()))?
@@ -426,7 +456,7 @@ fn embed_image(doc: &mut Document, bytes: &[u8]) -> Result<(ObjectId, u32, Strin
         img_dict,
         compress_flate(&rgb)?,
     )));
-    Ok((image_id, ih, "WmIm".into()))
+    Ok((image_id, iw, ih, "WmIm".into()))
 }
 
 fn attach_watermark(
@@ -437,7 +467,6 @@ fn attach_watermark(
     gs_id: ObjectId,
     image_name: Option<&str>,
     image_id: Option<ObjectId>,
-    below: bool,
 ) -> Result<(), AppError> {
     let mut page = doc
         .get_object(page_id)
@@ -495,41 +524,48 @@ fn attach_watermark(
 
     page.set("Resources", resources);
 
-    match page.get(b"Contents").ok().cloned() {
-        Some(Object::Reference(existing)) => {
-            if below {
-                page.set(
-                    "Contents",
-                    Object::Array(vec![
-                        Object::Reference(content_id),
-                        Object::Reference(existing),
-                    ]),
-                );
-            } else {
-                page.set(
-                    "Contents",
-                    Object::Array(vec![
-                        Object::Reference(existing),
-                        Object::Reference(content_id),
-                    ]),
-                );
-            }
-        }
-        Some(Object::Array(mut arr)) => {
-            if below {
-                arr.insert(0, Object::Reference(content_id));
-            } else {
-                arr.push(Object::Reference(content_id));
-            }
-            page.set("Contents", Object::Array(arr));
-        }
-        _ => {
-            page.set("Contents", content_id);
-        }
+    let mut contents = resolve_contents_streams(doc, &page);
+    let wm_ref = Object::Reference(content_id);
+    // Always append. "Below" is expressed via Multiply blend in ExtGState so the
+    // watermark stays visible on pages that paint an opaque background first.
+    contents.push(wm_ref);
+    match contents.len() {
+        0 => page.set("Contents", content_id),
+        1 => page.set("Contents", contents.remove(0)),
+        _ => page.set("Contents", Object::Array(contents)),
     }
 
     doc.objects.insert(page_id, Object::Dictionary(page));
     Ok(())
+}
+
+/// Flatten page Contents into a list of stream references (or inline objects).
+fn resolve_contents_streams(doc: &Document, page: &Dictionary) -> Vec<Object> {
+    match page.get(b"Contents").ok() {
+        Some(Object::Array(arr)) => flatten_content_array(doc, arr),
+        Some(Object::Reference(id)) => match doc.get_object(*id) {
+            Ok(Object::Array(arr)) => flatten_content_array(doc, arr),
+            Ok(Object::Stream(_)) => vec![Object::Reference(*id)],
+            _ => vec![Object::Reference(*id)],
+        },
+        Some(other) => vec![other.clone()],
+        None => Vec::new(),
+    }
+}
+
+fn flatten_content_array(doc: &Document, arr: &[Object]) -> Vec<Object> {
+    let mut out = Vec::with_capacity(arr.len());
+    for obj in arr {
+        match obj {
+            Object::Reference(id) => match doc.get_object(*id) {
+                Ok(Object::Array(inner)) => out.extend(flatten_content_array(doc, inner)),
+                _ => out.push(Object::Reference(*id)),
+            },
+            Object::Array(inner) => out.extend(flatten_content_array(doc, inner)),
+            other => out.push(other.clone()),
+        }
+    }
+    out
 }
 
 fn page_size(doc: &Document, page_id: ObjectId) -> Option<(f32, f32)> {
