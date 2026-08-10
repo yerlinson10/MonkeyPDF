@@ -371,24 +371,10 @@ fn build_image_ops(
 }
 
 fn mosaic_positions(pw: f32, ph: f32, cell_w: f32, cell_h: f32) -> Vec<(f32, f32)> {
-    let pad_x = cell_w * 0.4;
-    let pad_y = cell_h * 0.6;
-    let step_x = cell_w + pad_x;
-    let step_y = cell_h + pad_y;
-    let mut out = Vec::new();
-    let mut y = pad_y * 0.5;
-    while y + cell_h < ph {
-        let mut x = pad_x * 0.5;
-        while x + cell_w < pw {
-            out.push((x, y));
-            x += step_x;
-        }
-        y += step_y;
-    }
-    if out.is_empty() {
-        out.push(anchor_point(4, pw, ph, cell_w, cell_h));
-    }
-    out
+    // Same 3×3 grid as the UI position picker (not a dense tile flood).
+    (0..9)
+        .map(|i| anchor_point(i, pw, ph, cell_w, cell_h))
+        .collect()
 }
 
 fn anchor_point(position: u32, pw: f32, ph: f32, w: f32, h: f32) -> (f32, f32) {

@@ -196,13 +196,28 @@
   }
 
   function posStyle(i: number) {
+    // Match backend anchor_point: ~6% margin, box aligned to edges (not centered on corners).
+    const margin = 6
     const col = i % 3
     const row = Math.floor(i / 3)
-    const left = col === 0 ? 8 : col === 1 ? 50 : 92
-    const top = row === 0 ? 10 : row === 1 ? 50 : 90
-    const size =
-      mode === 'image' ? `width:${imageScale}%;` : ''
-    return `${size}left:${left}%;top:${top}%;transform:translate(-50%,-50%) rotate(${rotation}deg);opacity:${1 - transparency / 100}`
+    const tx = col === 1 ? '-50%' : '0'
+    const ty = row === 1 ? '-50%' : '0'
+    const parts = [
+      `opacity:${1 - transparency / 100}`,
+      `transform:translate(${tx},${ty}) rotate(${rotation}deg)`,
+      'transform-origin:center center',
+    ]
+    if (mode === 'image') parts.push(`width:${imageScale}%`)
+
+    if (col === 0) parts.push(`left:${margin}%`)
+    else if (col === 1) parts.push('left:50%')
+    else parts.push(`right:${margin}%`)
+
+    if (row === 0) parts.push(`top:${margin}%`)
+    else if (row === 1) parts.push('top:50%')
+    else parts.push(`bottom:${margin}%`)
+
+    return parts.join(';')
   }
 </script>
 
@@ -290,61 +305,61 @@
               >
                 {#snippet children()}
                   {#if showOverlay}
-                    {#if mosaic}
-                      {#each Array.from({ length: 9 }, (_, i) => i) as i}
+                    <div class="wm-clip">
+                      {#if mosaic}
+                        {#each Array.from({ length: 9 }, (_, i) => i) as i}
+                          <div
+                            class="wm-overlay"
+                            class:is-below={layer === 'below'}
+                            class:is-image={mode === 'image'}
+                            style={posStyle(i)}
+                          >
+                            {#if mode === 'text'}
+                              <span
+                                class="wm-text"
+                                style="color:{color};font-size:clamp(10px, {fontSize * 0.11}cqw, {Math.max(
+                                  12,
+                                  fontSize * 0.42,
+                                )}px);font-weight:{bold
+                                  ? 700
+                                  : 500};font-style:{italic ? 'italic' : 'normal'};text-decoration:{underline
+                                  ? 'underline'
+                                  : 'none'}">{text}</span
+                              >
+                            {:else if imagePreviewUrl}
+                              <img class="wm-img" src={imagePreviewUrl} alt="" draggable="false" />
+                            {:else}
+                              <span class="img-ph">IMG</span>
+                            {/if}
+                          </div>
+                        {/each}
+                      {:else}
                         <div
                           class="wm-overlay"
                           class:is-below={layer === 'below'}
-                          style={posStyle(i)}
+                          class:is-image={mode === 'image'}
+                          style={posStyle(position)}
                         >
                           {#if mode === 'text'}
                             <span
                               class="wm-text"
-                              style="color:{color};font-size:{Math.max(12, fontSize * 0.35)}px;font-weight:{bold
+                              style="color:{color};font-size:clamp(10px, {fontSize * 0.11}cqw, {Math.max(
+                                12,
+                                fontSize * 0.42,
+                              )}px);font-weight:{bold
                                 ? 700
                                 : 500};font-style:{italic ? 'italic' : 'normal'};text-decoration:{underline
                                 ? 'underline'
                                 : 'none'}">{text}</span
                             >
                           {:else if imagePreviewUrl}
-                            <img
-                              class="wm-img"
-                              src={imagePreviewUrl}
-                              alt=""
-                              draggable="false"
-                            />
+                            <img class="wm-img" src={imagePreviewUrl} alt="" draggable="false" />
                           {:else}
                             <span class="img-ph">IMG</span>
                           {/if}
                         </div>
-                      {/each}
-                    {:else}
-                      <div
-                        class="wm-overlay"
-                        class:is-below={layer === 'below'}
-                        style={posStyle(position)}
-                      >
-                        {#if mode === 'text'}
-                          <span
-                            class="wm-text"
-                            style="color:{color};font-size:{Math.max(14, fontSize * 0.4)}px;font-weight:{bold
-                              ? 700
-                              : 500};font-style:{italic ? 'italic' : 'normal'};text-decoration:{underline
-                              ? 'underline'
-                              : 'none'}">{text}</span
-                          >
-                        {:else if imagePreviewUrl}
-                          <img
-                            class="wm-img"
-                            src={imagePreviewUrl}
-                            alt=""
-                            draggable="false"
-                          />
-                        {:else}
-                          <span class="img-ph">IMG</span>
-                        {/if}
-                      </div>
-                    {/if}
+                      {/if}
+                    </div>
                   {/if}
                 {/snippet}
               </PdfPageView>
@@ -353,128 +368,155 @@
 
           <p class="mp-preview-hint">
             Rueda pulsada = mover · Ctrl + rueda = zoom · clic derecho = copiar / zoom
-            {#if layer === 'below'}
-              · Capa: por debajo del contenido (en el PDF exportado)
-            {/if}
           </p>
         </div>
       {/if}
     </div>
 
     <aside class="wm-side">
-      <strong>Opciones de marca de agua</strong>
-      <div class="mode-row">
-        <button type="button" class="mode-btn" class:is-on={mode === 'text'} onclick={() => (mode = 'text')}>
-          Agregar texto
-        </button>
-        <button type="button" class="mode-btn" class:is-on={mode === 'image'} onclick={() => (mode = 'image')}>
-          Agregar imagen
-        </button>
-      </div>
+      <header class="wm-side-head">
+        <strong>Marca de agua</strong>
+        <div class="mode-row">
+          <button type="button" class="mode-btn" class:is-on={mode === 'text'} onclick={() => (mode = 'text')}>
+            Texto
+          </button>
+          <button type="button" class="mode-btn" class:is-on={mode === 'image'} onclick={() => (mode = 'image')}>
+            Imagen
+          </button>
+        </div>
+      </header>
 
-      {#if mode === 'text'}
-        <div class="mp-field">
-          <label for="wm-text">Texto</label>
-          <input id="wm-text" class="mp-input" bind:value={text} />
-        </div>
-        <div class="mp-field">
-          <label for="wm-fs">Tamaño: <span class="mono">{fontSize}</span></label>
-          <input id="wm-fs" class="mp-range" type="range" min="8" max="120" step="1" bind:value={fontSize} />
-        </div>
-        <div class="toolbar">
-          <button type="button" class="mp-chip" class:is-on={bold} onclick={() => (bold = !bold)}>B</button>
-          <button type="button" class="mp-chip" class:is-on={italic} onclick={() => (italic = !italic)}>I</button>
-          <button type="button" class="mp-chip" class:is-on={underline} onclick={() => (underline = !underline)}
-            >U</button
-          >
-        </div>
-        <div class="swatches">
-          {#each colors as c}
+      <div class="wm-side-scroll">
+        <section class="wm-sec">
+          {#if mode === 'text'}
+            <div class="mp-field">
+              <label for="wm-text">Texto</label>
+              <input id="wm-text" class="mp-input wm-input" bind:value={text} />
+            </div>
+            <div class="style-row">
+              <div class="toolbar">
+                <button type="button" class="mp-chip" class:is-on={bold} onclick={() => (bold = !bold)}>B</button>
+                <button type="button" class="mp-chip" class:is-on={italic} onclick={() => (italic = !italic)}>I</button>
+                <button
+                  type="button"
+                  class="mp-chip"
+                  class:is-on={underline}
+                  onclick={() => (underline = !underline)}>U</button
+                >
+              </div>
+              <div class="swatches">
+                {#each colors as c}
+                  <button
+                    type="button"
+                    class="swatch"
+                    class:is-on={color === c}
+                    style="background:{c}"
+                    onclick={() => (color = c)}
+                    aria-label={c}
+                  ></button>
+                {/each}
+              </div>
+            </div>
+            <div class="mp-field">
+              <label for="wm-fs">Tamaño <span class="mono">{fontSize}</span></label>
+              <input id="wm-fs" class="mp-range" type="range" min="8" max="120" step="1" bind:value={fontSize} />
+            </div>
+          {:else}
+            <button type="button" class="mp-btn mp-btn-ghost wm-img-btn" onclick={pickImage}>
+              <Icon name="upload" size={16} />
+              {imagePath ? 'Cambiar imagen' : 'Añadir imagen'}
+            </button>
+            {#if imagePath}
+              <p class="hint mono">{imagePath.split(/[\\/]/).pop()}</p>
+            {/if}
+            <div class="mp-field">
+              <label for="wm-img-scale">Tamaño <span class="mono">{imageScale}%</span></label>
+              <input
+                id="wm-img-scale"
+                class="mp-range"
+                type="range"
+                min="5"
+                max="90"
+                step="1"
+                bind:value={imageScale}
+              />
+            </div>
+          {/if}
+        </section>
+
+        <section class="wm-sec">
+          <div class="sec-label">Colocación</div>
+          <div class="place-row">
+            <div class="pos-grid" class:is-dim={mosaic}>
+              {#each Array.from({ length: 9 }, (_, i) => i) as i}
+                <button
+                  type="button"
+                  class:is-on={position === i}
+                  disabled={mosaic}
+                  onclick={() => (position = i)}
+                  aria-label="Posición {i + 1}"
+                ></button>
+              {/each}
+            </div>
+            <label class="mp-check mosaic-check">
+              <input type="checkbox" bind:checked={mosaic} />
+              <span class="mp-check-box" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 12l5 5L20 7" />
+                </svg>
+              </span>
+              <span class="mp-check-label">Mosaico</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="wm-sec">
+          <div class="sec-label">Ajustes</div>
+          <div class="mp-field">
+            <label for="wm-tr">Transparencia <span class="mono">{transparency}%</span></label>
+            <input id="wm-tr" class="mp-range" type="range" min="0" max="100" step="1" bind:value={transparency} />
+          </div>
+          <div class="mp-field">
+            <label for="wm-rot">Rotación <span class="mono">{rotation}°</span></label>
+            <input id="wm-rot" class="mp-range" type="range" min="0" max="360" step="1" bind:value={rotation} />
+          </div>
+          <div class="mode-row layer-row">
             <button
               type="button"
-              class="swatch"
-              class:is-on={color === c}
-              style="background:{c}"
-              onclick={() => (color = c)}
-              aria-label={c}
-            ></button>
-          {/each}
-        </div>
-      {:else}
-        <button type="button" class="mp-btn mp-btn-ghost" onclick={pickImage}>
-          <Icon name="upload" size={16} />
-          {imagePath ? 'Cambiar imagen' : 'Añadir imagen'}
+              class="mode-btn"
+              class:is-on={layer === 'above'}
+              onclick={() => (layer = 'above')}>Encima</button
+            >
+            <button
+              type="button"
+              class="mode-btn"
+              class:is-on={layer === 'below'}
+              onclick={() => (layer = 'below')}>Debajo</button
+            >
+          </div>
+        </section>
+
+        <details class="wm-more">
+          <summary>Páginas <span class="mono">{pageFrom}–{pageTo}</span></summary>
+          <div class="row2">
+            <label class="mp-field">
+              <span>Desde</span>
+              <input class="mp-input wm-input" type="number" min="1" max={pageCount} bind:value={pageFrom} />
+            </label>
+            <label class="mp-field">
+              <span>Hasta</span>
+              <input class="mp-input wm-input" type="number" min="1" max={pageCount} bind:value={pageTo} />
+            </label>
+          </div>
+        </details>
+      </div>
+
+      <footer class="wm-side-foot">
+        <OutputPicker bind:value={output} defaultName="marca-agua.pdf" label="PDF de salida" />
+        <button type="button" class="mp-btn mp-btn-primary w-full" disabled={loading} onclick={run}>
+          Insertar marca de agua
         </button>
-        {#if imagePath}
-          <p class="hint mono">{imagePath.split(/[\\/]/).pop()}</p>
-        {/if}
-        <div class="mp-field">
-          <label for="wm-img-scale">Tamaño imagen: <span class="mono">{imageScale}%</span></label>
-          <input
-            id="wm-img-scale"
-            class="mp-range"
-            type="range"
-            min="5"
-            max="90"
-            step="1"
-            bind:value={imageScale}
-          />
-        </div>
-      {/if}
-
-      <div class="mp-field">
-        <span>Posición</span>
-        <div class="pos-grid">
-          {#each Array.from({ length: 9 }, (_, i) => i) as i}
-            <button type="button" class:is-on={position === i} onclick={() => (position = i)}></button>
-          {/each}
-        </div>
-      </div>
-
-      <label class="mp-check">
-        <input type="checkbox" bind:checked={mosaic} />
-        <span class="mp-check-box" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 12l5 5L20 7" />
-          </svg>
-        </span>
-        <span class="mp-check-label">Mosaico</span>
-      </label>
-
-      <div class="mp-field">
-        <label for="wm-tr">Transparencia: <span class="mono">{transparency}%</span></label>
-        <input id="wm-tr" class="mp-range" type="range" min="0" max="100" step="1" bind:value={transparency} />
-      </div>
-
-      <div class="mp-field">
-        <label for="wm-rot">Rotación: <span class="mono">{rotation}°</span></label>
-        <input id="wm-rot" class="mp-range" type="range" min="0" max="360" step="1" bind:value={rotation} />
-      </div>
-
-      <div class="row2">
-        <label class="mp-field">
-          <span>De la página</span>
-          <input class="mp-input" type="number" min="1" max={pageCount} bind:value={pageFrom} />
-        </label>
-        <label class="mp-field">
-          <span>a</span>
-          <input class="mp-input" type="number" min="1" max={pageCount} bind:value={pageTo} />
-        </label>
-      </div>
-
-      <div class="mode-row">
-        <button type="button" class="mode-btn" class:is-on={layer === 'above'} onclick={() => (layer = 'above')}>
-          Por encima
-        </button>
-        <button type="button" class="mode-btn" class:is-on={layer === 'below'} onclick={() => (layer = 'below')}>
-          Por debajo
-        </button>
-      </div>
-
-      <OutputPicker bind:value={output} defaultName="marca-agua.pdf" label="PDF de salida" />
-      <button type="button" class="mp-btn mp-btn-primary w-full" disabled={loading} onclick={run}>
-        Insertar marca de agua
-      </button>
+      </footer>
     </aside>
   </div>
 </div>
@@ -483,19 +525,30 @@
   .wm-layout { display: flex; flex-direction: column; gap: 1rem; }
   .wm-main {
     display: grid;
-    grid-template-columns: 1fr min(300px, 36%);
+    grid-template-columns: 1fr min(280px, 34%);
     gap: 1rem;
-    align-items: start;
+    align-items: stretch;
+    min-height: 0;
   }
   @media (max-width: 900px) {
     .wm-main { grid-template-columns: 1fr; }
   }
-  .wm-preview { display: flex; flex-direction: column; gap: 0.75rem; }
+  .wm-preview { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
+  .wm-clip {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    container-type: inline-size;
+    pointer-events: none;
+  }
   .wm-overlay {
     position: absolute;
     pointer-events: none;
-    white-space: nowrap;
     z-index: 2;
+    max-width: calc(100% - 12%);
+  }
+  .wm-overlay.is-image {
+    max-width: none;
   }
   .wm-overlay.is-below {
     z-index: 1;
@@ -503,6 +556,12 @@
   }
   .wm-text {
     font-family: Syne, sans-serif;
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.1;
   }
   .wm-img {
     display: block;
@@ -518,49 +577,169 @@
     font-size: 11px;
     font-weight: 700;
   }
+
   .wm-side {
     border: 2px solid var(--color-ink);
     box-shadow: 4px 4px 0 var(--color-ink);
     background: var(--color-paper, #fff);
     color: var(--color-ink);
-    padding: 0.75rem;
     display: flex;
     flex-direction: column;
-    gap: 0.7rem;
+    min-height: 0;
+    max-height: min(78vh, 820px);
+    overflow: hidden;
   }
-  .mode-row { display: flex; gap: 0.35rem; }
+  .wm-side-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 0.65rem 0.7rem 0.55rem;
+    border-bottom: 1.5px solid var(--color-rule);
+    flex-shrink: 0;
+  }
+  .wm-side-head strong {
+    font-size: var(--text-sm);
+    letter-spacing: 0.02em;
+  }
+  .wm-side-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0.55rem 0.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+  .wm-side-foot {
+    flex-shrink: 0;
+    padding: 0.65rem 0.7rem;
+    border-top: 1.5px solid var(--color-rule);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--color-paper);
+  }
+
+  .wm-sec {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .sec-label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-2);
+  }
+
+  .mode-row { display: flex; gap: 0.3rem; }
   .mode-btn {
     flex: 1;
     font: inherit;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    padding: 0.45rem;
-    border: 2px solid var(--color-ink);
+    padding: 0.35rem 0.25rem;
+    border: 1.5px solid var(--color-ink);
     background: transparent;
     cursor: pointer;
   }
   .mode-btn.is-on { background: var(--color-banana, #f5d547); }
-  .toolbar { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
-  .swatches { display: flex; gap: 0.4rem; }
-  .swatch {
-    width: 22px; height: 22px; border-radius: 999px;
-    border: 2px solid transparent; cursor: pointer;
+  .layer-row .mode-btn { font-size: 11px; }
+
+  .wm-input { min-height: 36px; padding: 0 0.55rem; font-size: var(--text-xs); }
+  .wm-img-btn { width: 100%; justify-content: center; min-height: 36px; }
+
+  .style-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
   }
-  .swatch.is-on { border-color: var(--color-ink); box-shadow: 2px 2px 0 var(--color-ink); }
+  .toolbar { display: flex; gap: 0.25rem; align-items: center; }
+  .toolbar :global(.mp-chip) {
+    min-height: 30px;
+    padding: 0 0.55rem;
+  }
+  .swatches { display: flex; gap: 0.3rem; }
+  .swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    cursor: pointer;
+  }
+  .swatch.is-on {
+    border-color: var(--color-ink);
+    box-shadow: 1px 1px 0 var(--color-ink);
+  }
+
+  .place-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
   .pos-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.3rem;
-    max-width: 120px;
+    gap: 0.25rem;
+    width: 72px;
+    flex-shrink: 0;
   }
+  .pos-grid.is-dim { opacity: 0.35; }
   .pos-grid button {
     aspect-ratio: 1;
-    border: 2px solid var(--color-ink);
+    border: 1.5px solid var(--color-ink);
     background: #fff;
     cursor: pointer;
+    padding: 0;
   }
+  .pos-grid button:disabled { cursor: default; }
   .pos-grid button.is-on { background: var(--color-banana, #f5d547); }
-  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-  .hint { font-size: var(--text-xs); margin: 0; color: var(--color-ink-2); word-break: break-all; }
+  .mosaic-check { min-height: 0; gap: 0.45rem; }
+  .mosaic-check :global(.mp-check-label) { font-size: var(--text-xs); }
+
+  .wm-more {
+    border: 1.5px solid var(--color-rule);
+    border-radius: var(--radius-sm);
+    padding: 0.35rem 0.5rem;
+  }
+  .wm-more summary {
+    cursor: pointer;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 28px;
+  }
+  .wm-more summary::-webkit-details-marker { display: none; }
+  .wm-more summary::before {
+    content: '+';
+    font-weight: 800;
+    width: 1rem;
+  }
+  .wm-more[open] summary::before { content: '−'; }
+  .wm-more[open] summary { margin-bottom: 0.4rem; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+
+  .hint {
+    font-size: 10px;
+    margin: 0;
+    color: var(--color-ink-2);
+    word-break: break-all;
+    line-height: 1.3;
+  }
   .w-full { width: 100%; }
+
+  .wm-sec :global(.mp-field) { gap: 0.2rem; }
+  .wm-sec :global(.mp-field label),
+  .wm-sec :global(.mp-field > span),
+  .wm-more :global(.mp-field label),
+  .wm-more :global(.mp-field > span) {
+    font-size: 10px;
+  }
 </style>
