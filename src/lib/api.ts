@@ -4,6 +4,8 @@ export interface OpResult {
   outputPaths: string[]
   pageCount: number
   elapsedMs: number
+  partial?: boolean
+  warnings?: string[]
 }
 
 export interface AiResult {
@@ -507,6 +509,9 @@ export interface Diagnosis {
   orphanObjects: number
   missingPages: number
   linearized: boolean
+  xrefBroken: boolean
+  scannedObjects: number
+  recoverablePages: number
   warnings: string[]
 }
 

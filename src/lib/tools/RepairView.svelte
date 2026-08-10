@@ -73,6 +73,10 @@
       </div>
       <div class="mp-hint-row" style="margin-top: 0.5rem">
         <span class="mp-chip is-on">{diagnosis.pageCount} pág.</span>
+        <span class="mp-chip" class:is-warn={diagnosis.recoverablePages === 0}>
+          {diagnosis.recoverablePages} recuperables
+        </span>
+        <span class="mp-chip">{diagnosis.scannedObjects} objs</span>
         <span class="mp-chip" class:is-warn={diagnosis.encrypted}>
           {diagnosis.encrypted ? 'Cifrado' : 'Sin cifrado'}
         </span>
@@ -88,6 +92,9 @@
         <span class="mp-chip" class:is-warn={diagnosis.missingPages > 0}>
           {diagnosis.missingPages} pág. incompletas
         </span>
+        {#if diagnosis.xrefBroken}
+          <span class="mp-chip is-warn">Xref dañada</span>
+        {/if}
         {#if diagnosis.linearized}
           <span class="mp-chip is-warn">Linearizado</span>
         {/if}
@@ -100,27 +107,36 @@
     </div>
   {/if}
 
-  {#if diagnosis?.encrypted}
-    <div class="mp-field">
-      <label for="repair-pwd">Contraseña (quitar cifrado)</label>
-      <input
-        id="repair-pwd"
-        class="mp-input"
-        type="password"
-        autocomplete="current-password"
-        bind:value={password}
-        placeholder="Obligatoria si el PDF está cifrado"
-      />
-    </div>
-  {/if}
+  <div class="mp-field">
+    <label for="repair-pwd">Contraseña (si el PDF está cifrado)</label>
+    <input
+      id="repair-pwd"
+      class="mp-input"
+      type="password"
+      autocomplete="current-password"
+      bind:value={password}
+      placeholder="Opcional — pruébala si otro visor pide clave"
+    />
+  </div>
 
   <OutputPicker bind:value={output} defaultName="reparado.pdf" label="PDF de salida" />
+  <p class="mp-note">
+    Si el archivo está muy destruido, MonkeyPDF puede generar un <strong>rescate parcial</strong>
+    (texto/imágenes sueltas). Eso no es el documento original — solo fragmentos legibles.
+  </p>
   <button type="button" class="mp-btn mp-btn-primary" disabled={loading || diagnosing} onclick={run}>
     Reparar
   </button>
 </div>
 
 <style>
+  .mp-note {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--color-ink-2);
+    line-height: 1.45;
+  }
+
   .diag-card {
     border: 2px solid var(--color-ink);
     box-shadow: 4px 4px 0 var(--color-ink);

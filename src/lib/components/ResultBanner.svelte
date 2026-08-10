@@ -113,13 +113,16 @@
           <p class="mp-toast-title">No se pudo terminar</p>
           <p class="mp-toast-meta mono">{error}</p>
         {:else if result}
-          <span class="mp-toast-kicker">Listo</span>
+          <span class="mp-toast-kicker">{result.partial ? 'Parcial' : 'Listo'}</span>
           <p class="mp-toast-title">
-            {toolLabel}
+            {result.partial ? 'Rescate parcial' : toolLabel}
             <span class="mp-toast-stats mono"
               >{result.elapsedMs} ms · {result.pageCount} pág.</span
             >
           </p>
+          {#if result.partial && result.warnings?.length}
+            <p class="mp-toast-meta">{result.warnings[0]}</p>
+          {/if}
           <ul class="mp-toast-paths">
             {#each result.outputPaths as path}
               <li>

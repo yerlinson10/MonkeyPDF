@@ -46,6 +46,11 @@ pub struct OpResult {
     pub output_paths: Vec<String>,
     pub page_count: u32,
     pub elapsed_ms: u64,
+    /// True when output is a best-effort salvage, not a full structural repair.
+    #[serde(default)]
+    pub partial: bool,
+    #[serde(default)]
+    pub warnings: Vec<String>,
 }
 
 impl OpResult {
@@ -54,6 +59,23 @@ impl OpResult {
             output_paths,
             page_count,
             elapsed_ms,
+            partial: false,
+            warnings: Vec::new(),
+        }
+    }
+
+    pub fn partial(
+        output_paths: Vec<String>,
+        page_count: u32,
+        elapsed_ms: u64,
+        warnings: Vec<String>,
+    ) -> Self {
+        Self {
+            output_paths,
+            page_count,
+            elapsed_ms,
+            partial: true,
+            warnings,
         }
     }
 }
