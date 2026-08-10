@@ -1,5 +1,5 @@
 use crate::error::{AppError, OpResult};
-use crate::pdf_engine::{create_pdfium, ensure_parent_dir, ensure_pdf_path};
+use crate::pdf_engine::{create_pdfium, ensure_parent_dir, ensure_pdf_path, Progress};
 use image::codecs::jpeg::JpegEncoder;
 use image::imageops::FilterType;
 use image::{DynamicImage, ImageEncoder, RgbImage};
@@ -13,14 +13,21 @@ use std::time::Instant;
 /// Compress a PDF. Tries image re-encoding and (when helpful) page rasterization
 /// at a DPI/JPEG quality derived from `quality` (1–100). Never writes an output
 /// larger than the original — falls back to a copy if nothing shrinks.
-pub fn compress_pdf(path: String, quality: u8, output: String) -> Result<OpResult, AppError> {
+pub fn compress_pdf(
+    path: String,
+    quality: u8,
+    output: String,
+    progress: Option<Progress>,
+) -> Result<OpResult, AppError> {
     let started = Instant::now();
+    let progress = progress.unwrap_or_else(Progress::none);
     let quality = quality.clamp(1, 100);
 
     let input = ensure_pdf_path(&path)?;
     let output_path = Path::new(&output);
     ensure_parent_dir(output_path)?;
 
+    progress.emit(0, 3, "Leyendo PDF");
     let original = fs::read(&input)?;
     let original_size = original.len();
 
@@ -29,6 +36,7 @@ pub fn compress_pdf(path: String, quality: u8, output: String) -> Result<OpResul
 
     let mut best = original;
 
+    progress.tick(1, 3, "Recomprimiendo imágenes")?;
     if let Ok(bytes) = compress_by_reencoding_images(&mut doc, quality) {
         if bytes.len() < best.len() {
             best = bytes;
@@ -40,13 +48,15 @@ pub fn compress_pdf(path: String, quality: u8, output: String) -> Result<OpResul
     let should_rasterize = best.len() >= original_size.saturating_mul(95) / 100
         || best.len() > 80_000;
     if should_rasterize {
-        if let Ok(bytes) = compress_by_rasterizing(&input, quality) {
+        progress.tick(2, 3, "Rasterizando páginas")?;
+        if let Ok(bytes) = compress_by_rasterizing(&input, quality, &progress) {
             if bytes.len() < best.len() {
                 best = bytes;
             }
         }
     }
 
+    progress.tick(3, 3, "Escribiendo salida")?;
     fs::write(output_path, &best)?;
 
     Ok(OpResult::new(
@@ -75,7 +85,11 @@ fn compress_by_reencoding_images(doc: &mut Document, quality: u8) -> Result<Vec<
     save_doc_bytes(doc)
 }
 
-fn compress_by_rasterizing(input: &Path, quality: u8) -> Result<Vec<u8>, AppError> {
+fn compress_by_rasterizing(
+    input: &Path,
+    quality: u8,
+    progress: &Progress,
+) -> Result<Vec<u8>, AppError> {
     let dpi = quality_to_dpi(quality);
     let jpeg_quality = quality_to_jpeg(quality);
 
@@ -86,9 +100,15 @@ fn compress_by_rasterizing(input: &Path, quality: u8) -> Result<Vec<u8>, AppErro
 
     let scale = dpi as f32 / 72.0;
     let render_config = PdfRenderConfig::new().scale_page_by_factor(scale);
+    let page_count = document.pages().len() as u32;
 
     let mut pages: Vec<RasterPage> = Vec::new();
-    for page in document.pages().iter() {
+    for (index, page) in document.pages().iter().enumerate() {
+        progress.tick(
+            (index as u32) + 1,
+            page_count.max(1),
+            format!("Raster página {}/{}", index + 1, page_count),
+        )?;
         let width_pts = page.width().value.max(1.0);
         let height_pts = page.height().value.max(1.0);
         let image = page

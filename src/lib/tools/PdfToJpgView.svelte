@@ -1,8 +1,11 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import FileDropZone from '../components/FileDropZone.svelte'
   import OutputPicker from '../components/OutputPicker.svelte'
   import ResultBanner from '../components/ResultBanner.svelte'
   import { pdfToJpg, type OpResult } from '../api'
+  import { runWithProgress, type JobProgress } from '../jobProgress'
+  import { loadToolPrefs, saveToolPrefs } from '../settings'
 
   let paths = $state<string[]>([])
   let outputDir = $state('')
@@ -10,6 +13,23 @@
   let loading = $state(false)
   let error = $state<string | null>(null)
   let result = $state<OpResult | null>(null)
+  let progress = $state<JobProgress | null>(null)
+  let prefsReady = $state(false)
+
+  onMount(() => {
+    void loadToolPrefs<{ dpi: number }>('pdf-to-jpg').then((p) => {
+      if (typeof p.dpi === 'number') dpi = p.dpi
+      prefsReady = true
+    })
+    const onRun = () => void run()
+    window.addEventListener('mp-run', onRun)
+    return () => window.removeEventListener('mp-run', onRun)
+  })
+
+  $effect(() => {
+    if (!prefsReady) return
+    void saveToolPrefs('pdf-to-jpg', { dpi })
+  })
 
   async function run() {
     error = null
@@ -24,17 +44,30 @@
     }
     loading = true
     try {
-      result = await pdfToJpg(paths[0], dpi, outputDir)
+      result = await runWithProgress(
+        (p) => (progress = p),
+        () => pdfToJpg(paths[0], dpi, outputDir),
+      )
     } catch (e) {
       error = String(e)
     } finally {
       loading = false
+      progress = null
     }
   }
 </script>
 
 <div class="space-y-5">
-  <ResultBanner {loading} {error} {result} toolLabel="PDF a JPG" />
+  <ResultBanner
+    {loading}
+    {error}
+    {result}
+    {progress}
+    toolLabel="PDF a JPG"
+    toolId="pdf-to-jpg"
+    inputs={paths}
+    cancellable={true}
+  />
   <FileDropZone bind:paths accept=".pdf" multiple={false} label="Arrastra un PDF para convertir a JPG" />
 
   <div class="mp-field">

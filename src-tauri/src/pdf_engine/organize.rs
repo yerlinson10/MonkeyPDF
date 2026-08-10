@@ -1,6 +1,6 @@
 use crate::error::{AppError, OpResult};
 use crate::pdf_engine::merge::merge_documents;
-use crate::pdf_engine::{ensure_parent_dir, ensure_pdf_path};
+use crate::pdf_engine::{ensure_parent_dir, ensure_pdf_path, Progress};
 use lopdf::{Document, Object};
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -19,8 +19,13 @@ pub struct PageRef {
 }
 
 /// Build a new PDF from an ordered list of page references (possibly from multiple files).
-pub fn organize_pdf(pages: Vec<PageRef>, output: String) -> Result<OpResult, AppError> {
+pub fn organize_pdf(
+    pages: Vec<PageRef>,
+    output: String,
+    progress: Option<Progress>,
+) -> Result<OpResult, AppError> {
     let started = Instant::now();
+    let progress = progress.unwrap_or_else(Progress::none);
     if pages.is_empty() {
         return Err(AppError::InvalidInput(
             "Añade al menos una página".into(),
@@ -59,10 +64,16 @@ pub fn organize_pdf(pages: Vec<PageRef>, output: String) -> Result<OpResult, App
         }
     }
 
+    let total = pages.len() as u32;
     // Extract each requested page the same way as split (clone + delete others).
     // Avoids deep-copy bugs with Parent/Kids and missing object refs in real PDFs.
     let mut parts: Vec<Document> = Vec::with_capacity(pages.len());
-    for pref in &pages {
+    for (i, pref) in pages.iter().enumerate() {
+        progress.tick(
+            (i as u32) + 1,
+            total,
+            format!("Página {}/{}", i + 1, total),
+        )?;
         let src = sources.get(&pref.source_path).unwrap();
         let mut part = extract_single_page(src, pref.page)?;
         if pref.rotate != 0 {

@@ -5,6 +5,7 @@
   import ResultBanner from '../components/ResultBanner.svelte'
   import SignatureModal from '../components/SignatureModal.svelte'
   import PdfPageView from '../components/PdfPageView.svelte'
+  import DatePicker from '../components/DatePicker.svelte'
   import Icon from '../components/Icon.svelte'
   import {
     getFormFields,
@@ -27,6 +28,12 @@
   } from '../signatureStore.svelte'
   import { previewRenderWidth } from '../previewScale'
   import { attachMiddlePan } from '../panScroll'
+  import {
+    formatDisplayDate,
+    isoFromLoose,
+    looksLikeDateField,
+    toIsoDay,
+  } from '../pdfDate'
 
   interface Placement {
     id: string
@@ -36,6 +43,8 @@
     /** Inline stamp kinds that can be edited on the page. */
     textKind?: 'name' | 'date' | 'text'
     dateFormat?: string
+    /** ISO day for date stamps. */
+    dateIso?: string
     /** AcroForm field this placement filled via «Firmar aquí». */
     formFieldName?: string
     page: number
@@ -50,32 +59,13 @@
   const ZOOM_MIN = 0.5
   const ZOOM_MAX = 3
 
-  const DATE_FORMATS: { id: string; label: string; sample: string }[] = [
-    { id: 'es-short', label: 'D/M/AAAA', sample: '6/8/2026' },
-    { id: 'es-long', label: 'Largo ES', sample: '6 de agosto de 2026' },
-    { id: 'iso', label: 'AAAA-MM-DD', sample: '2026-08-06' },
-    { id: 'us', label: 'MM/DD/AAAA', sample: '08/06/2026' },
-    { id: 'dot', label: 'DD.MM.AAAA', sample: '06.08.2026' },
+  const DATE_FORMATS: { id: string; label: string }[] = [
+    { id: 'es-short', label: 'D/M/AAAA' },
+    { id: 'es-long', label: 'Largo' },
+    { id: 'iso', label: 'ISO' },
+    { id: 'us', label: 'US' },
+    { id: 'dot', label: 'DD.MM' },
   ]
-
-  function formatDate(d: Date, formatId: string): string {
-    switch (formatId) {
-      case 'es-long':
-        return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
-      case 'iso':
-        return d.toISOString().slice(0, 10)
-      case 'us':
-        return d.toLocaleDateString('en-US')
-      case 'dot': {
-        const dd = String(d.getDate()).padStart(2, '0')
-        const mm = String(d.getMonth() + 1).padStart(2, '0')
-        return `${dd}.${mm}.${d.getFullYear()}`
-      }
-      case 'es-short':
-      default:
-        return d.toLocaleDateString('es-ES')
-    }
-  }
 
   let paths = $state<string[]>([])
   let output = $state('')
@@ -268,11 +258,12 @@
     ny = 0.7,
   ) {
     const dateFormat = 'es-short'
+    const dateIso = toIsoDay(new Date())
     let label = ''
     if (kind === 'name') {
       label = profileName || assets.find((a) => a.name)?.name || 'Nombre'
     } else if (kind === 'date') {
-      label = formatDate(new Date(), dateFormat)
+      label = formatDisplayDate(dateIso, dateFormat)
     } else {
       label = 'Texto'
     }
@@ -287,6 +278,7 @@
         label,
         textKind: kind,
         dateFormat: kind === 'date' ? dateFormat : undefined,
+        dateIso: kind === 'date' ? dateIso : undefined,
         page,
         nx,
         ny,
@@ -330,13 +322,31 @@
   }
 
   async function applyDateFormat(p: Placement, formatId: string) {
-    const label = formatDate(new Date(), formatId)
+    const iso = p.dateIso || toIsoDay(new Date())
+    const label = formatDisplayDate(iso, formatId)
     const png = await renderTextPng(label)
     placements = placements.map((x) =>
       x.id === p.id
-        ? { ...x, dateFormat: formatId, label, inlinePng: png }
+        ? { ...x, dateFormat: formatId, dateIso: iso, label, inlinePng: png }
         : x,
     )
+  }
+
+  async function applyDateIso(p: Placement, iso: string) {
+    if (!iso) return
+    const formatId = p.dateFormat ?? 'es-short'
+    const label = formatDisplayDate(iso, formatId)
+    const png = await renderTextPng(label)
+    placements = placements.map((x) =>
+      x.id === p.id ? { ...x, dateIso: iso, label, inlinePng: png } : x,
+    )
+  }
+
+  function setFormDate(name: string, iso: string) {
+    formValues = {
+      ...formValues,
+      [name]: iso ? formatDisplayDate(iso, 'es-short') : '',
+    }
   }
 
   function removePlacement(id: string) {
@@ -430,7 +440,7 @@
     if (e.button !== 0) return
     if (editingId === p.id) return
     const t = e.target as HTMLElement
-    if (t.closest('.pl-toolbar, .pl-del, .handle, .pl-edit, .pl-date-fmt')) return
+    if (t.closest('.pl-toolbar, .pl-del, .handle, .pl-edit, .pl-date-fmt, .pl-date-tools, .form-date, .mp-date')) return
     e.stopPropagation()
     e.preventDefault()
     selectedId = p.id
@@ -746,6 +756,16 @@
                             <option value={opt}>{opt}</option>
                           {/each}
                         </select>
+                      {:else if f.kind !== 'unknown' && looksLikeDateField(f.name)}
+                        <!-- svelte-ignore a11y_no_static_element_interactions -->
+                        <div class="form-date" onpointerdown={(e) => e.stopPropagation()}>
+                          <DatePicker
+                            size="compact"
+                            value={isoFromLoose(formValues[f.name] ?? f.value ?? '')}
+                            placeholder={f.name}
+                            onchange={(iso) => setFormDate(f.name, iso)}
+                          />
+                        </div>
                       {:else if f.kind !== 'unknown'}
                         <input
                           type="text"
@@ -801,18 +821,34 @@
                       {#if selectedId === p.id && editingId !== p.id}
                         <div class="pl-toolbar">
                           {#if p.textKind === 'date'}
-                            <label class="pl-date-fmt">
-                              <span class="sr-only">Formato de fecha</span>
-                              <select
-                                value={p.dateFormat ?? 'es-short'}
-                                onpointerdown={(e) => e.stopPropagation()}
-                                onchange={(e) => void applyDateFormat(p, e.currentTarget.value)}
-                              >
+                            <!-- svelte-ignore a11y_no_static_element_interactions -->
+                            <div
+                              class="pl-date-tools"
+                              onpointerdown={(e) => e.stopPropagation()}
+                            >
+                              <div class="pl-date-pick">
+                                <DatePicker
+                                  size="compact"
+                                  value={p.dateIso || toIsoDay(new Date())}
+                                  displayFormat={p.dateFormat ?? 'es-short'}
+                                  clearable={false}
+                                  onchange={(iso) => void applyDateIso(p, iso)}
+                                />
+                              </div>
+                              <div class="pl-date-fmts">
                                 {#each DATE_FORMATS as fmt}
-                                  <option value={fmt.id}>{fmt.label}</option>
+                                  <button
+                                    type="button"
+                                    class="pl-fmt"
+                                    class:is-on={(p.dateFormat ?? 'es-short') === fmt.id}
+                                    title={fmt.label}
+                                    onclick={() => void applyDateFormat(p, fmt.id)}
+                                  >
+                                    {fmt.label}
+                                  </button>
                                 {/each}
-                              </select>
-                            </label>
+                              </div>
+                            </div>
                           {/if}
                           {#if p.textKind === 'text' || p.textKind === 'name'}
                             <button
@@ -995,7 +1031,7 @@
             </button>
           {/each}
         </div>
-        <p class="hint">Texto: doble clic en la página para editar. Fecha: elige el formato en la barra.</p>
+        <p class="hint">Texto: doble clic en la página para editar. Fecha: calendario + formato en la barra.</p>
       </div>
 
       {#if formFields.length > 0}
@@ -1182,18 +1218,64 @@
   .pl-del:hover {
     background: var(--color-danger-soft);
   }
-  .pl-date-fmt select {
-    font: inherit;
-    font-size: 11px;
-    font-weight: 700;
+  .pl-date-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 11rem;
+    max-width: 14rem;
+  }
+  .pl-date-pick {
+    height: 28px;
     border: 1.5px solid var(--color-ink);
     background: var(--color-accent);
-    color: var(--color-ink);
-    height: 26px;
-    padding: 0 4px;
-    max-width: 9.5rem;
     box-shadow: 1px 1px 0 var(--color-ink);
+  }
+  .pl-date-pick :global(.mp-date-trigger) {
+    background: transparent;
+    min-height: 28px;
+    height: 28px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .pl-date-pick :global(.mp-date-pop) {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 40;
+  }
+  .pl-date-fmts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .pl-fmt {
+    border: 1.5px solid var(--color-ink);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font: inherit;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    padding: 2px 5px;
     cursor: pointer;
+    box-shadow: 1px 1px 0 var(--color-ink);
+  }
+  .pl-fmt.is-on,
+  .pl-fmt:hover {
+    background: var(--color-accent);
+  }
+  .form-date {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+  }
+  .form-date :global(.mp-date) {
+    height: 100%;
+  }
+  .form-date :global(.mp-date-pop) {
+    z-index: 30;
   }
   .handle {
     position: absolute;

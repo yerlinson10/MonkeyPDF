@@ -25,8 +25,11 @@ export type ToolId =
   | 'jpg-to-pdf'
   | 'protect'
   | 'repair'
+  | 'metadata'
   | 'page-numbers'
   | 'office'
+  | 'pdfa'
+  | 'extract'
   | 'markdown'
   | 'ai'
   | 'ocr'
@@ -104,6 +107,14 @@ export const TOOLS: ToolMeta[] = [
     group: 'core',
   },
   {
+    id: 'extract',
+    title: 'Extraer',
+    short: 'Imágenes / texto',
+    description: 'Extrae imágenes embebidas (JPEG/PNG) o texto plano a TXT.',
+    accept: '.pdf',
+    group: 'core',
+  },
+  {
     id: 'protect',
     title: 'Proteger',
     short: 'Clave / unlock',
@@ -116,6 +127,14 @@ export const TOOLS: ToolMeta[] = [
     title: 'Reparar',
     short: 'Diagnóstico',
     description: 'Diagnostica y repara PDFs dañados (xref, streams, huérfanos) con re-guardado limpio.',
+    accept: '.pdf',
+    group: 'suite',
+  },
+  {
+    id: 'metadata',
+    title: 'Metadatos',
+    short: 'Info / autor',
+    description: 'Lee y edita título, autor, asunto, palabras clave y fechas del documento.',
     accept: '.pdf',
     group: 'suite',
   },
@@ -133,6 +152,14 @@ export const TOOLS: ToolMeta[] = [
     short: 'DOCX / XLSX / PPTX',
     description: 'Convierte Word, Excel, PowerPoint o HTML ↔ PDF con LibreOffice.',
     accept: '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.html,.htm,.odt,.ods,.odp',
+    group: 'suite',
+  },
+  {
+    id: 'pdfa',
+    title: 'PDF/A',
+    short: 'Archivo ISO',
+    description: 'Exporta a PDF/A-1b, A-2b o A-3b con LibreOffice para archivo a largo plazo.',
+    accept: '.pdf',
     group: 'suite',
   },
   {
@@ -302,6 +329,22 @@ export async function convertOffice(
   outputDir: string,
 ): Promise<OpResult> {
   return invoke('convert_office', { path, target, outputDir })
+}
+
+export async function convertToPdfa(
+  path: string,
+  version: number,
+  outputDir: string,
+): Promise<OpResult> {
+  return invoke('convert_to_pdfa', { path, version, outputDir })
+}
+
+export async function extractImages(path: string, outputDir: string): Promise<OpResult> {
+  return invoke('extract_images', { path, outputDir })
+}
+
+export async function extractText(path: string, output: string): Promise<OpResult> {
+  return invoke('extract_text', { path, output })
 }
 
 export async function checkLibreOffice(): Promise<boolean> {
@@ -525,6 +568,30 @@ export async function repairPdf(
   password: string | null,
 ): Promise<OpResult> {
   return invoke('repair_pdf', { path, output, password })
+}
+
+export interface PdfMetadata {
+  title: string
+  author: string
+  subject: string
+  keywords: string
+  creator: string
+  producer: string
+  creationDate: string
+  modDate: string
+  pageCount: number
+}
+
+export async function getPdfMetadata(path: string): Promise<PdfMetadata> {
+  return invoke('get_pdf_metadata', { path })
+}
+
+export async function setPdfMetadata(
+  path: string,
+  output: string,
+  meta: PdfMetadata,
+): Promise<OpResult> {
+  return invoke('set_pdf_metadata', { path, output, meta })
 }
 
 export interface WatermarkSpec {

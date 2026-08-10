@@ -37,6 +37,18 @@ Design system: see [`design.md`](design.md) + [`tokens.css`](tokens.css) (Hallma
 - **Marca de agua** — texto o imagen · posición 3×3 · mosaico · transparencia · rotación · capa
 - **Ordenar** — multi-archivo, grid de páginas arrastrable, rotar/borrar/insertar
 
+### Phase 7 — Usabilidad
+- Progreso % + cancelar en OCR, PDF→JPG, Comprimir, Ordenar
+- Historial de recientes en la hoja de inicio
+- Atajos: `Ctrl+K` busca · `Esc` cierra · `1–9` tools · `Ctrl+Enter` ejecuta
+- Preferencias por herramienta (última calidad, ángulo, marca de agua…)
+- **Metadatos** — leer/editar Info del PDF
+- Lote por carpeta en Comprimir / Rotar / Marca de agua
+
+### Phase 8 — PDF/A + Extraer
+- **PDF/A** — exporta A-1b / A-2b / A-3b vía LibreOffice (`SelectPdfVersion`)
+- **Extraer** — imágenes embebidas (XObject JPEG/PNG) o texto a TXT
+
 ## Prerequisites
 
 - Node.js 20+

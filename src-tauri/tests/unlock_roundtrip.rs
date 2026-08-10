@@ -53,6 +53,7 @@ fn protect_unlock_image_pdf_renders() {
         unlocked.to_string_lossy().to_string(),
         72,
         out.to_string_lossy().to_string(),
+        None,
     )
     .expect("pdfium must render unlocked PDF");
 
@@ -136,6 +137,7 @@ fn unlock_preserves_page_content_stream() {
         unlocked.to_string_lossy().to_string(),
         96,
         out.to_string_lossy().to_string(),
+        None,
     )
     .expect("render unlocked text pdf");
 

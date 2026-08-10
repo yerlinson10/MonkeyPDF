@@ -106,6 +106,7 @@ fn merge_split_rotate_smoke() {
         merged.to_string_lossy().to_string(),
         60,
         compressed.to_string_lossy().to_string(),
+        None,
     )
     .expect("compress failed");
     assert!(compressed.exists());
@@ -135,6 +136,7 @@ fn merge_split_rotate_smoke() {
         from_images.to_string_lossy().to_string(),
         72,
         jpg_out.to_string_lossy().to_string(),
+        None,
     );
     match pdfium_result {
         Ok(r) => {

@@ -9,8 +9,11 @@
     | 'jpg-to-pdf'
     | 'protect'
     | 'repair'
+    | 'metadata'
     | 'page-numbers'
     | 'office'
+    | 'pdfa'
+    | 'extract'
     | 'ocr'
     | 'redact'
     | 'crop'
@@ -86,6 +89,10 @@
     <circle cx="12" cy="16" r="1.2" fill="currentColor" stroke="none" />
   {:else if name === 'repair'}
     <path d="M14.7 6.3a4 4 0 0 0-5.6 5.6L3 18l3 3 6.1-6.1a4 4 0 0 0 5.6-5.6l-2.5 2.5-2.5-2.5 2.5-2.5z" />
+  {:else if name === 'metadata'}
+    <rect x="5" y="3" width="14" height="18" rx="1.5" />
+    <path d="M8 8h8M8 12h8M8 16h5" />
+    <circle cx="16.5" cy="16" r="1.2" fill="currentColor" stroke="none" />
   {:else if name === 'page-numbers'}
     <rect x="5" y="3" width="14" height="18" rx="1.5" />
     <path d="M9 8h6M9 12h6M9 16h3" />
@@ -94,6 +101,15 @@
     <rect x="13" y="4" width="7" height="7" rx="1" />
     <rect x="4" y="13" width="7" height="7" rx="1" />
     <rect x="13" y="13" width="7" height="7" rx="1" />
+  {:else if name === 'pdfa'}
+    <rect x="5" y="3" width="14" height="18" rx="1.5" />
+    <path d="M8 8h8M8 12h5" />
+    <path d="M15 15l2 2 3-4" />
+  {:else if name === 'extract'}
+    <rect x="4" y="4" width="10" height="14" rx="1.5" />
+    <path d="M14 8h5v11a1.5 1.5 0 0 1-1.5 1.5H14" />
+    <path d="M8 10h2M8 13h2" />
+    <path d="M17 12v5M15 15l2 2 2-2" />
   {:else if name === 'ocr'}
     <rect x="4" y="5" width="16" height="14" rx="1.5" />
     <path d="M8 9h8M8 12h6M8 15h4" />

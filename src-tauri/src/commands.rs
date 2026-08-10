@@ -33,25 +33,43 @@ pub async fn rotate_pdf(
 }
 
 #[command]
+pub fn cancel_job() {
+    pdf_engine::request_cancel();
+}
+
+#[command]
+pub fn clear_job() {
+    pdf_engine::clear_cancel();
+}
+
+#[command]
 pub async fn compress_pdf(
+    app: tauri::AppHandle,
     path: String,
     quality: u8,
     output: String,
 ) -> Result<OpResult, crate::error::AppError> {
-    tauri::async_runtime::spawn_blocking(move || pdf_engine::compress_pdf(path, quality, output))
-        .await
-        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+    let progress = pdf_engine::Progress::new(Some(app));
+    tauri::async_runtime::spawn_blocking(move || {
+        pdf_engine::compress_pdf(path, quality, output, Some(progress))
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
 }
 
 #[command]
 pub async fn pdf_to_jpg(
+    app: tauri::AppHandle,
     path: String,
     dpi: u32,
     output_dir: String,
 ) -> Result<OpResult, crate::error::AppError> {
-    tauri::async_runtime::spawn_blocking(move || pdf_engine::pdf_to_jpg(path, dpi, output_dir))
-        .await
-        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+    let progress = pdf_engine::Progress::new(Some(app));
+    tauri::async_runtime::spawn_blocking(move || {
+        pdf_engine::pdf_to_jpg(path, dpi, output_dir, Some(progress))
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
 }
 
 #[command]
@@ -116,6 +134,47 @@ pub async fn convert_office(
 }
 
 #[command]
+pub async fn convert_to_pdfa(
+    path: String,
+    version: u8,
+    output_dir: String,
+) -> Result<OpResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        pdf_engine::convert_to_pdfa(path, version, output_dir)
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn extract_images(
+    app: tauri::AppHandle,
+    path: String,
+    output_dir: String,
+) -> Result<OpResult, crate::error::AppError> {
+    let progress = pdf_engine::Progress::new(Some(app));
+    tauri::async_runtime::spawn_blocking(move || {
+        pdf_engine::extract_images(path, output_dir, Some(progress))
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn extract_text(
+    app: tauri::AppHandle,
+    path: String,
+    output: String,
+) -> Result<OpResult, crate::error::AppError> {
+    let progress = pdf_engine::Progress::new(Some(app));
+    tauri::async_runtime::spawn_blocking(move || {
+        pdf_engine::extract_text(path, output, Some(progress))
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
 pub async fn check_libreoffice() -> Result<bool, crate::error::AppError> {
     Ok(pdf_engine::soffice_available())
 }
@@ -127,14 +186,18 @@ pub async fn check_tesseract() -> Result<bool, crate::error::AppError> {
 
 #[command]
 pub async fn ocr_pdf(
+    app: tauri::AppHandle,
     path: String,
     output: String,
     lang: Option<String>,
     mode: Option<String>,
 ) -> Result<OpResult, crate::error::AppError> {
-    tauri::async_runtime::spawn_blocking(move || pdf_engine::ocr_pdf(path, output, lang, mode))
-        .await
-        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+    let progress = pdf_engine::Progress::new(Some(app));
+    tauri::async_runtime::spawn_blocking(move || {
+        pdf_engine::ocr_pdf(path, output, lang, mode, Some(progress))
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
 }
 
 #[command]
@@ -312,10 +375,34 @@ pub async fn watermark_pdf(
 
 #[command]
 pub async fn organize_pdf(
+    app: tauri::AppHandle,
     pages: Vec<pdf_engine::PageRef>,
     output: String,
 ) -> Result<OpResult, crate::error::AppError> {
-    tauri::async_runtime::spawn_blocking(move || pdf_engine::organize_pdf(pages, output))
+    let progress = pdf_engine::Progress::new(Some(app));
+    tauri::async_runtime::spawn_blocking(move || {
+        pdf_engine::organize_pdf(pages, output, Some(progress))
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn get_pdf_metadata(
+    path: String,
+) -> Result<pdf_engine::PdfMetadata, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::get_pdf_metadata(path))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn set_pdf_metadata(
+    path: String,
+    output: String,
+    meta: pdf_engine::PdfMetadata,
+) -> Result<OpResult, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::set_pdf_metadata(path, output, meta))
         .await
         .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
 }

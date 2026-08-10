@@ -4,6 +4,8 @@
   import OutputPicker from '../components/OutputPicker.svelte'
   import ResultBanner from '../components/ResultBanner.svelte'
   import { checkTesseract, ocrPdf, type OpResult } from '../api'
+  import { runWithProgress, type JobProgress } from '../jobProgress'
+  import { loadToolPrefs, saveToolPrefs } from '../settings'
 
   let paths = $state<string[]>([])
   let output = $state('')
@@ -13,6 +15,8 @@
   let loading = $state(false)
   let error = $state<string | null>(null)
   let result = $state<OpResult | null>(null)
+  let progress = $state<JobProgress | null>(null)
+  let prefsReady = $state(false)
 
   const langs = [
     { id: 'spa+eng', label: 'spa+eng' },
@@ -32,6 +36,19 @@
     checkTesseract()
       .then((ok) => (available = ok))
       .catch(() => (available = false))
+    void loadToolPrefs<{ lang: string; mode: typeof mode }>('ocr').then((p) => {
+      if (typeof p.lang === 'string') lang = p.lang
+      if (p.mode === 'markdown' || p.mode === 'txt' || p.mode === 'searchable_pdf') mode = p.mode
+      prefsReady = true
+    })
+    const onRun = () => void run()
+    window.addEventListener('mp-run', onRun)
+    return () => window.removeEventListener('mp-run', onRun)
+  })
+
+  $effect(() => {
+    if (!prefsReady) return
+    void saveToolPrefs('ocr', { lang, mode })
   })
 
   async function run() {
@@ -47,17 +64,30 @@
     }
     loading = true
     try {
-      result = await ocrPdf(paths[0], output, lang, mode)
+      result = await runWithProgress(
+        (p) => (progress = p),
+        () => ocrPdf(paths[0], output, lang, mode),
+      )
     } catch (e) {
       error = String(e)
     } finally {
       loading = false
+      progress = null
     }
   }
 </script>
 
 <div class="space-y-5">
-  <ResultBanner {loading} {error} {result} toolLabel="OCR" />
+  <ResultBanner
+    {loading}
+    {error}
+    {result}
+    {progress}
+    toolLabel="OCR"
+    toolId="ocr"
+    inputs={paths}
+    cancellable={true}
+  />
 
   {#if available === false}
     <div class="mp-alert is-warn is-sticky" role="alert">

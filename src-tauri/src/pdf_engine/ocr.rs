@@ -1,5 +1,7 @@
 use crate::error::{AppError, OpResult};
-use crate::pdf_engine::{create_pdfium, ensure_parent_dir, ensure_pdf_path, merge_pdfs};
+use crate::pdf_engine::{
+    create_pdfium, ensure_parent_dir, ensure_pdf_path, merge_pdfs, Progress,
+};
 use pdfium_render::prelude::*;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -96,8 +98,10 @@ pub fn ocr_pdf(
     output: String,
     lang: Option<String>,
     mode: Option<String>,
+    progress: Option<Progress>,
 ) -> Result<OpResult, AppError> {
     let started = Instant::now();
+    let progress = progress.unwrap_or_else(Progress::none);
     let input = ensure_pdf_path(&path)?;
     let output_path = PathBuf::from(&output);
     ensure_parent_dir(&output_path)?;
@@ -125,7 +129,8 @@ pub fn ocr_pdf(
     std::fs::create_dir_all(&work)?;
 
     let result = (|| -> Result<OpResult, AppError> {
-        let page_images = render_pages_png(&input, &work, 200)?;
+        progress.emit(0, 1, "Renderizando páginas");
+        let page_images = render_pages_png(&input, &work, 200, &progress)?;
         let page_count = page_images.len() as u32;
         if page_count == 0 {
             return Err(AppError::InvalidInput("PDF sin páginas".into()));
@@ -135,6 +140,11 @@ pub fn ocr_pdf(
             "searchable_pdf" => {
                 let mut pdf_parts = Vec::new();
                 for (i, img) in page_images.iter().enumerate() {
+                    progress.tick(
+                        (i as u32) + 1,
+                        page_count,
+                        format!("OCR página {}/{}", i + 1, page_count),
+                    )?;
                     let stem = work.join(format!("ocr_page_{i:03}"));
                     run_tesseract(&tess, img, &stem, &lang, Some("pdf"))?;
                     let pdf = stem.with_extension("pdf");
@@ -155,6 +165,11 @@ pub fn ocr_pdf(
             "txt" | "markdown" => {
                 let mut chunks = Vec::new();
                 for (i, img) in page_images.iter().enumerate() {
+                    progress.tick(
+                        (i as u32) + 1,
+                        page_count,
+                        format!("OCR página {}/{}", i + 1, page_count),
+                    )?;
                     let stem = work.join(format!("ocr_page_{i:03}"));
                     run_tesseract(&tess, img, &stem, &lang, None)?;
                     let txt_path = stem.with_extension("txt");
@@ -194,7 +209,12 @@ pub fn ocr_pdf(
     result
 }
 
-fn render_pages_png(pdf: &Path, work: &Path, dpi: u32) -> Result<Vec<PathBuf>, AppError> {
+fn render_pages_png(
+    pdf: &Path,
+    work: &Path,
+    dpi: u32,
+    progress: &Progress,
+) -> Result<Vec<PathBuf>, AppError> {
     let pdfium = create_pdfium()?;
     let document = pdfium
         .load_pdf_from_file(pdf, None)
@@ -202,9 +222,15 @@ fn render_pages_png(pdf: &Path, work: &Path, dpi: u32) -> Result<Vec<PathBuf>, A
 
     let scale = dpi as f32 / 72.0;
     let render_config = PdfRenderConfig::new().scale_page_by_factor(scale);
+    let page_count = document.pages().len() as u32;
     let mut out = Vec::new();
 
     for (index, page) in document.pages().iter().enumerate() {
+        progress.tick(
+            (index as u32) + 1,
+            page_count.max(1),
+            format!("Render {}/{}", index + 1, page_count),
+        )?;
         let image = page
             .render_with_config(&render_config)
             .map_err(|e| AppError::Pdfium(e.to_string()))?

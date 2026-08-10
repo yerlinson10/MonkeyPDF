@@ -109,6 +109,30 @@ export function joinOutputPath(dir: string, fileName: string): string {
   return `${cleanDir}${sep}${fileName}`
 }
 
+/** Last-used options per tool (quality, angle, watermark prefs, …). */
+export async function loadToolPrefs<T extends Record<string, unknown>>(
+  toolId: OutputToolId,
+): Promise<Partial<T>> {
+  try {
+    const s = getStore()
+    const all = (await s.get<Record<string, Record<string, unknown>>>('toolPrefs')) ?? {}
+    return (all[toolId] ?? {}) as Partial<T>
+  } catch {
+    return {}
+  }
+}
+
+export async function saveToolPrefs(
+  toolId: OutputToolId,
+  prefs: Record<string, unknown>,
+): Promise<void> {
+  const s = getStore()
+  const all = (await s.get<Record<string, Record<string, unknown>>>('toolPrefs')) ?? {}
+  all[toolId] = { ...(all[toolId] ?? {}), ...prefs }
+  await s.set('toolPrefs', all)
+  await s.save()
+}
+
 export function apiKeyFor(settings: AiSettings): string {
   switch (settings.provider) {
     case 'openai':

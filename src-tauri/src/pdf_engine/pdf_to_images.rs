@@ -1,11 +1,17 @@
 use crate::error::{AppError, OpResult};
-use crate::pdf_engine::{create_pdfium, ensure_dir, ensure_pdf_path};
+use crate::pdf_engine::{create_pdfium, ensure_dir, ensure_pdf_path, Progress};
 use pdfium_render::prelude::*;
 use std::path::PathBuf;
 use std::time::Instant;
 
-pub fn pdf_to_jpg(path: String, dpi: u32, output_dir: String) -> Result<OpResult, AppError> {
+pub fn pdf_to_jpg(
+    path: String,
+    dpi: u32,
+    output_dir: String,
+    progress: Option<Progress>,
+) -> Result<OpResult, AppError> {
     let started = Instant::now();
+    let progress = progress.unwrap_or_else(Progress::none);
     let dpi = dpi.clamp(72, 600);
     let input = ensure_pdf_path(&path)?;
     let out_dir = ensure_dir(&output_dir)?;
@@ -27,6 +33,11 @@ pub fn pdf_to_jpg(path: String, dpi: u32, output_dir: String) -> Result<OpResult
     let page_count = document.pages().len() as u32;
 
     for (index, page) in document.pages().iter().enumerate() {
+        progress.tick(
+            (index as u32) + 1,
+            page_count.max(1),
+            format!("Renderizando página {}/{}", index + 1, page_count),
+        )?;
         let image = page
             .render_with_config(&render_config)
             .map_err(|e| AppError::Pdfium(e.to_string()))?

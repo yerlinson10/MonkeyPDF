@@ -155,6 +155,7 @@ fn ocr_skips_without_tesseract() {
         output.to_string_lossy().to_string(),
         Some("eng".into()),
         Some("markdown".into()),
+        None,
     );
     assert!(err.is_err(), "OCR should fail clearly without Tesseract");
 }

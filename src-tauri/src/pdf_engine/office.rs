@@ -386,6 +386,126 @@ pub fn convert_with_libreoffice(
     ))
 }
 
+/// Convert a PDF to PDF/A-1b / A-2b / A-3b via LibreOffice Writer export.
+/// `version`: 1 | 2 | 3 (SelectPdfVersion).
+pub fn convert_to_pdfa(
+    path: String,
+    version: u8,
+    output_dir: String,
+) -> Result<OpResult, AppError> {
+    let started = Instant::now();
+    let version = match version {
+        1 | 2 | 3 => version,
+        _ => {
+            return Err(AppError::InvalidInput(
+                "Versión PDF/A inválida (1, 2 o 3)".into(),
+            ))
+        }
+    };
+
+    let input = PathBuf::from(&path);
+    if !input.exists() {
+        return Err(AppError::InvalidInput(format!("File not found: {path}")));
+    }
+    if ext_of(&input) != "pdf" {
+        return Err(AppError::InvalidInput(
+            "PDF/A solo acepta archivos PDF".into(),
+        ));
+    }
+
+    let soffice = find_soffice().ok_or_else(|| {
+        AppError::InvalidInput(
+            "LibreOffice no encontrado. Instálalo desde libreoffice.org y reinicia MonkeyPDF."
+                .into(),
+        )
+    })?;
+
+    let final_out_dir = ensure_dir(&output_dir)?;
+
+    let _guard = LIBREOFFICE_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+
+    let work = WorkDir::create()?;
+    let sandbox_input = work.input_dir().join("input.pdf");
+    fs::copy(&input, &sandbox_input).map_err(|e| {
+        AppError::Pdf(format!("No se pudo preparar el archivo para LibreOffice: {e}"))
+    })?;
+
+    let program_dir = soffice
+        .parent()
+        .map(|p| p.to_path_buf())
+        .unwrap_or_else(|| PathBuf::from("."));
+    let profile_uri = file_uri(&work.profile_dir());
+    let user_install = format!("-env:UserInstallation={profile_uri}");
+    // LibreOffice JSON filter: SelectPdfVersion 1=A-1b, 2=A-2b, 3=A-3b
+    let convert_to = format!(
+        r#"pdf:writer_pdf_Export:{{"SelectPdfVersion":{{"type":"long","value":"{version}"}}}}"#
+    );
+    let lo_out = work.output_dir();
+
+    let mut cmd = Command::new(&soffice);
+    cmd.current_dir(&program_dir);
+    cmd.arg("--headless");
+    cmd.arg("--nologo");
+    cmd.arg("--nofirststartwizard");
+    cmd.arg("--norestore");
+    cmd.arg("--invisible");
+    cmd.arg(&user_install);
+    cmd.arg("--infilter=writer_pdf_import");
+    cmd.arg("--convert-to");
+    cmd.arg(&convert_to);
+    cmd.arg("--outdir");
+    cmd.arg(&lo_out);
+    cmd.arg(&sandbox_input);
+
+    if let Ok(old_path) = std::env::var("PATH") {
+        let sep = if cfg!(windows) { ";" } else { ":" };
+        cmd.env(
+            "PATH",
+            format!("{}{sep}{old_path}", program_dir.display()),
+        );
+    } else {
+        cmd.env("PATH", program_dir.as_os_str());
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    let output = cmd
+        .output()
+        .map_err(|e| AppError::Pdf(format!("No se pudo ejecutar LibreOffice: {e}")))?;
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let combined = format!("{stderr}\n{stdout}");
+
+    let produced = wait_for_output(&lo_out, &sandbox_input, "pdf", 12_000).ok_or_else(|| {
+        AppError::Pdf(format!(
+            "LibreOffice no generó PDF/A. {}",
+            summarize_lo_error(&combined)
+        ))
+    })?;
+
+    let dest_name = format!("{}_pdfa{}.pdf", safe_stem(&input), version);
+    let dest = unique_path(&final_out_dir.join(dest_name));
+    fs::copy(&produced, &dest).map_err(|e| {
+        AppError::Pdf(format!(
+            "Conversión OK, pero no se pudo copiar a la carpeta de salida: {e}"
+        ))
+    })?;
+
+    Ok(OpResult::new(
+        vec![dest.to_string_lossy().to_string()],
+        1,
+        started.elapsed().as_millis() as u64,
+    ))
+}
+
 fn unique_path(path: &Path) -> PathBuf {
     if !path.exists() {
         return path.to_path_buf();

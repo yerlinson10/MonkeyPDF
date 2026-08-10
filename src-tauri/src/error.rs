@@ -17,6 +17,9 @@ pub enum AppError {
 
     #[error("Invalid input: {0}")]
     InvalidInput(String),
+
+    #[error("Operación cancelada")]
+    Cancelled,
 }
 
 impl From<lopdf::Error> for AppError {

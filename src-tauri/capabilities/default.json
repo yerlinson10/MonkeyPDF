@@ -11,6 +11,7 @@
     "fs:default",
     "fs:allow-read",
     "fs:allow-write",
+    "fs:allow-read-dir",
     "clipboard-manager:allow-write-text",
     "clipboard-manager:allow-read-text",
     {

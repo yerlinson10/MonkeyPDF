@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { RAIL_TOOLS, TOOLS, type ToolId, type ToolMeta } from './lib/api'
+  import { RAIL_TOOLS, TOOLS, revealInExplorer, type ToolId, type ToolMeta } from './lib/api'
   import { initNotifications } from './lib/notify'
+  import { clearHistory, fileName, loadHistory, type HistoryEntry } from './lib/history'
+  import { dispatchToolOpen, dispatchToolRun } from './lib/jobProgress'
   import Icon from './lib/components/Icon.svelte'
   import MergeView from './lib/tools/MergeView.svelte'
   import SplitView from './lib/tools/SplitView.svelte'
@@ -10,10 +12,13 @@
   import CompressView from './lib/tools/CompressView.svelte'
   import PdfToJpgView from './lib/tools/PdfToJpgView.svelte'
   import JpgToPdfView from './lib/tools/JpgToPdfView.svelte'
+  import ExtractView from './lib/tools/ExtractView.svelte'
   import ProtectView from './lib/tools/ProtectView.svelte'
   import RepairView from './lib/tools/RepairView.svelte'
+  import MetadataView from './lib/tools/MetadataView.svelte'
   import PageNumbersView from './lib/tools/PageNumbersView.svelte'
   import OfficeView from './lib/tools/OfficeView.svelte'
+  import PdfaView from './lib/tools/PdfaView.svelte'
   import OcrView from './lib/tools/OcrView.svelte'
   import RedactView from './lib/tools/RedactView.svelte'
   import CropView from './lib/tools/CropView.svelte'
@@ -27,6 +32,8 @@
 
   let activeTool = $state<ToolId | null>(null)
   let toolQuery = $state('')
+  let history = $state<HistoryEntry[]>([])
+  let searchEl = $state<HTMLInputElement | null>(null)
 
   const activeMeta = $derived(TOOLS.find((t) => t.id === activeTool) ?? null)
 
@@ -53,8 +60,78 @@
     return String(i + 1).padStart(2, '0')
   }
 
+  async function refreshHistory() {
+    history = await loadHistory()
+  }
+
+  async function openHistoryOut(entry: HistoryEntry) {
+    const path = entry.outputs[0]
+    if (!path) return
+    try {
+      await revealInExplorer(path)
+    } catch (e) {
+      console.warn(e)
+    }
+  }
+
+  function repeatHistory(entry: HistoryEntry) {
+    activeTool = entry.toolId
+  }
+
+  function isTypingTarget(el: EventTarget | null): boolean {
+    if (!(el instanceof HTMLElement)) return false
+    const tag = el.tagName
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable
+  }
+
   onMount(() => {
     void initNotifications()
+    void refreshHistory()
+    const onHist = () => void refreshHistory()
+    window.addEventListener('mp-history', onHist)
+
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey
+      if (mod && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        searchEl?.focus()
+        searchEl?.select()
+        return
+      }
+      if (e.key === 'Escape') {
+        if (toolQuery) {
+          toolQuery = ''
+          return
+        }
+        if (activeTool) {
+          activeTool = null
+        }
+        return
+      }
+      if (mod && e.key === 'Enter' && activeTool && activeTool !== 'settings') {
+        e.preventDefault()
+        dispatchToolRun()
+        return
+      }
+      if (mod && e.key.toLowerCase() === 'o' && activeTool && activeTool !== 'settings') {
+        e.preventDefault()
+        dispatchToolOpen()
+        return
+      }
+      if (!mod && !isTypingTarget(e.target) && /^[1-9]$/.test(e.key)) {
+        const idx = Number(e.key) - 1
+        const tool = RAIL_TOOLS[idx]
+        if (tool) {
+          e.preventDefault()
+          activeTool = tool.id
+        }
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('mp-history', onHist)
+      window.removeEventListener('keydown', onKey)
+    }
   })
 </script>
 
@@ -73,9 +150,10 @@
       <label class="mp-rail-search">
         <span class="sr-only">Buscar herramientas</span>
         <input
+          bind:this={searchEl}
           type="search"
           class="mp-rail-search-input"
-          placeholder="Buscar herramienta…"
+          placeholder="Buscar… Ctrl+K"
           bind:value={toolQuery}
           autocomplete="off"
           spellcheck="false"
@@ -138,7 +216,7 @@
           <div>
             <span class="kicker">Hoja de trabajo</span>
             <h1>Escoge el sello</h1>
-            <p>Diecinueve herramientas. Un clic. El PDF no sale de tu máquina.</p>
+            <p>Veintidós herramientas. Un clic. El PDF no sale de tu máquina.</p>
           </div>
         </header>
         <div class="mp-canvas-body">
@@ -155,11 +233,44 @@
                 resultado en la hoja.
               </p>
               <div class="mp-hint-row">
-                <span class="mp-hint">01–19 tools</span>
-                <span class="mp-hint">Tesseract opcional</span>
-                <span class="mp-hint">banana stamp</span>
+                <span class="mp-hint">01–22 tools</span>
+                <span class="mp-hint">Ctrl+K busca</span>
+                <span class="mp-hint">Esc cierra</span>
               </div>
             </div>
+
+            {#if history.length}
+              <div class="mp-recent">
+                <div class="mp-recent-head">
+                  <span class="kicker">Recientes</span>
+                  <button
+                    type="button"
+                    class="mp-btn mp-btn-ghost !min-h-8 !text-xs"
+                    onclick={() => void clearHistory().then(refreshHistory)}
+                  >
+                    Limpiar
+                  </button>
+                </div>
+                <ul class="mp-recent-list">
+                  {#each history.slice(0, 8) as entry (entry.id)}
+                    <li class="mp-recent-item">
+                      <button type="button" class="mp-recent-main" onclick={() => repeatHistory(entry)}>
+                        <span class="mp-recent-tool">{entry.toolLabel}</span>
+                        <span class="mp-recent-file mono">{fileName(entry.outputs[0] ?? '')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="mp-btn mp-btn-ghost !min-h-8 !px-2"
+                        title="Abrir en explorador"
+                        onclick={() => openHistoryOut(entry)}
+                      >
+                        <Icon name="folder" size={14} />
+                      </button>
+                    </li>
+                  {/each}
+                </ul>
+              </div>
+            {/if}
           </div>
         </div>
       {:else}
@@ -199,14 +310,20 @@
               <PdfToJpgView />
             {:else if activeTool === 'jpg-to-pdf'}
               <JpgToPdfView />
+            {:else if activeTool === 'extract'}
+              <ExtractView />
             {:else if activeTool === 'protect'}
               <ProtectView />
             {:else if activeTool === 'repair'}
               <RepairView />
+            {:else if activeTool === 'metadata'}
+              <MetadataView />
             {:else if activeTool === 'page-numbers'}
               <PageNumbersView />
             {:else if activeTool === 'office'}
               <OfficeView />
+            {:else if activeTool === 'pdfa'}
+              <PdfaView />
             {:else if activeTool === 'ocr'}
               <OcrView />
             {:else if activeTool === 'redact'}

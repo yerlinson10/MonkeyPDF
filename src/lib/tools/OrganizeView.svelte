@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import { open } from '@tauri-apps/plugin-dialog'
   import FileDropZone from '../components/FileDropZone.svelte'
   import OutputPicker from '../components/OutputPicker.svelte'
@@ -11,6 +12,7 @@
     previewPdf,
     type OpResult,
   } from '../api'
+  import { runWithProgress, type JobProgress } from '../jobProgress'
 
   interface PageItem {
     id: string
@@ -28,10 +30,17 @@
   let building = $state(false)
   let error = $state<string | null>(null)
   let result = $state<OpResult | null>(null)
+  let progress = $state<JobProgress | null>(null)
 
   let dragId = $state<string | null>(null)
   let insertAt = $state<number | null>(null)
   let builtKey = ''
+
+  onMount(() => {
+    const onRun = () => void run()
+    window.addEventListener('mp-run', onRun)
+    return () => window.removeEventListener('mp-run', onRun)
+  })
 
   $effect(() => {
     const list = [...paths]
@@ -192,24 +201,38 @@
     }
     loading = true
     try {
-      result = await organizePdf(
-        pages.map((p) => ({
-          sourcePath: p.sourcePath,
-          page: p.page,
-          rotate: p.rotate,
-        })),
-        output,
+      result = await runWithProgress(
+        (p) => (progress = p),
+        () =>
+          organizePdf(
+            pages.map((p) => ({
+              sourcePath: p.sourcePath,
+              page: p.page,
+              rotate: p.rotate,
+            })),
+            output,
+          ),
       )
     } catch (e) {
       error = String(e)
     } finally {
       loading = false
+      progress = null
     }
   }
 </script>
 
 <div class="org-layout">
-  <ResultBanner {loading} {error} {result} toolLabel="Ordenar PDF" />
+  <ResultBanner
+    {loading}
+    {error}
+    {result}
+    {progress}
+    toolLabel="Ordenar PDF"
+    toolId="organize"
+    inputs={paths}
+    cancellable={true}
+  />
   <div class="org-main">
     <div class="org-workspace">
       <FileDropZone

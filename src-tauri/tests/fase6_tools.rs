@@ -1,5 +1,6 @@
 use app_lib::pdf_engine::{
-    self, diagnose_pdf, organize_pdf, repair_pdf, watermark_pdf, PageRef, WatermarkSpec,
+    self, diagnose_pdf, get_pdf_metadata, organize_pdf, repair_pdf, set_pdf_metadata,
+    watermark_pdf, PageRef, WatermarkSpec,
 };
 use lopdf::{Dictionary, Document, Object, Stream};
 use std::path::PathBuf;
@@ -362,8 +363,41 @@ fn organize_multi_smoke() {
             },
         ],
         out.to_string_lossy().to_string(),
+        None,
     )
     .expect("organize");
     assert!(out.exists());
     assert_eq!(r.page_count, 4);
+}
+
+#[test]
+fn metadata_roundtrip() {
+    let dir = temp_dir("meta");
+    let input = dir.join("in.pdf");
+    let output = dir.join("out.pdf");
+    make_simple_pdf(&input, "Meta");
+
+    let before = get_pdf_metadata(input.to_string_lossy().to_string()).expect("get");
+    assert_eq!(before.page_count, 1);
+
+    let mut meta = before;
+    meta.title = "Monkey Title".into();
+    meta.author = "Banana Author".into();
+    meta.subject = "Subject".into();
+    meta.keywords = "a,b,c".into();
+
+    let r = set_pdf_metadata(
+        input.to_string_lossy().to_string(),
+        output.to_string_lossy().to_string(),
+        meta,
+    )
+    .expect("set");
+    assert!(output.exists());
+    assert_eq!(r.page_count, 1);
+
+    let after = get_pdf_metadata(output.to_string_lossy().to_string()).expect("get2");
+    assert_eq!(after.title, "Monkey Title");
+    assert_eq!(after.author, "Banana Author");
+    assert_eq!(after.subject, "Subject");
+    assert_eq!(after.keywords, "a,b,c");
 }
