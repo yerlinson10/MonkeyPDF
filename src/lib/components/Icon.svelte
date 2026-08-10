@@ -20,6 +20,7 @@
     | 'watermark'
     | 'compare'
     | 'sign'
+    | 'edit'
     | 'markdown'
     | 'ai'
     | 'settings'
@@ -131,6 +132,10 @@
     <path d="M4 20h16" />
     <path d="M6 16c2-4 4-8 6-8s3 2 5 6" />
     <path d="M14 8l3-3 2 2-3 3" />
+  {:else if name === 'edit'}
+    <path d="M5 19h3l9.5-9.5-3-3L5 16v3z" />
+    <path d="M13.5 7.5l3 3" />
+    <path d="M4 21h16" />
   {:else if name === 'markdown'}
     <path d="M4 6h16v12H4z" />
     <path d="M7 15V9l2.5 3L12 9v6M15 12h2m0 0l-1.5-2M17 12l-1.5 2" />

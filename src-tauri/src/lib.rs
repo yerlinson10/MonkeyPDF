@@ -64,6 +64,8 @@ pub fn run() {
             commands::ai_process_pdf,
             commands::write_text_file,
             commands::get_pdf_page_count,
+            commands::edit_list_text,
+            commands::edit_pdf,
             commands::preview_pdf,
             commands::preview_image,
             commands::reveal_in_explorer,

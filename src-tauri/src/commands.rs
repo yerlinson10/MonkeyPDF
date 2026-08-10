@@ -456,6 +456,32 @@ pub async fn get_pdf_page_count(path: String) -> Result<u32, crate::error::AppEr
 }
 
 #[command]
+pub async fn edit_list_text(
+    path: String,
+    page: u32,
+) -> Result<Vec<pdf_engine::TextRun>, crate::error::AppError> {
+    tauri::async_runtime::spawn_blocking(move || pdf_engine::list_text_runs(path, page))
+        .await
+        .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
+pub async fn edit_pdf(
+    app: tauri::AppHandle,
+    path: String,
+    output: String,
+    ops: Vec<pdf_engine::EditOp>,
+    flatten: bool,
+) -> Result<OpResult, crate::error::AppError> {
+    let progress = pdf_engine::Progress::new(Some(app));
+    tauri::async_runtime::spawn_blocking(move || {
+        pdf_engine::edit_pdf(path, output, ops, flatten, Some(progress))
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Pdf(format!("Task join error: {e}")))?
+}
+
+#[command]
 pub async fn preview_pdf(
     path: String,
     page: Option<u32>,

@@ -25,6 +25,7 @@
   import WatermarkView from './lib/tools/WatermarkView.svelte'
   import CompareView from './lib/tools/CompareView.svelte'
   import SignView from './lib/tools/SignView.svelte'
+  import EditView from './lib/tools/EditView.svelte'
   import MarkdownView from './lib/tools/MarkdownView.svelte'
   import AiView from './lib/tools/AiView.svelte'
   import SettingsView from './lib/tools/SettingsView.svelte'
@@ -233,7 +234,7 @@
                 resultado en la hoja.
               </p>
               <div class="mp-hint-row">
-                <span class="mp-hint">01–22 tools</span>
+                <span class="mp-hint">01–23 tools</span>
                 <span class="mp-hint">Ctrl+K busca</span>
                 <span class="mp-hint">Esc cierra</span>
               </div>
@@ -293,6 +294,7 @@
               activeTool === 'redact' ||
               activeTool === 'crop' ||
               activeTool === 'sign' ||
+              activeTool === 'edit' ||
               activeTool === 'watermark' ||
               activeTool === 'organize'}
           >
@@ -336,6 +338,8 @@
               <CompareView />
             {:else if activeTool === 'sign'}
               <SignView />
+            {:else if activeTool === 'edit'}
+              <EditView />
             {:else if activeTool === 'markdown'}
               <MarkdownView />
             {:else if activeTool === 'ai'}

@@ -38,6 +38,7 @@ export type ToolId =
   | 'watermark'
   | 'compare'
   | 'sign'
+  | 'edit'
   | 'settings'
 
 export interface ToolMeta {
@@ -208,6 +209,15 @@ export const TOOLS: ToolMeta[] = [
     short: 'Firma / formulario',
     description:
       'Crea firma e iniciales, arrástralas al PDF, rellena campos de formulario y hornea el resultado.',
+    accept: '.pdf',
+    group: 'advanced',
+  },
+  {
+    id: 'edit',
+    title: 'Editar',
+    short: 'Texto / anotar',
+    description:
+      'Edita texto, añade párrafos, anota, dibuja formas, inserta imágenes y sellos, rellena formularios.',
     accept: '.pdf',
     group: 'advanced',
   },
@@ -634,6 +644,152 @@ export async function organizePdf(
   output: string,
 ): Promise<OpResult> {
   return invoke('organize_pdf', { pages, output })
+}
+
+export interface TextRun {
+  runId: number
+  page: number
+  text: string
+  x: number
+  y: number
+  w: number
+  h: number
+  fontName: string
+  fontSize: number
+  color: string
+  editable: boolean
+}
+
+export type EditOp =
+  | { op: 'replaceText'; page: number; runId: number; newText: string }
+  | {
+      op: 'addText'
+      page: number
+      x: number
+      y: number
+      w: number
+      h: number
+      text: string
+      font?: string
+      size?: number
+      bold?: boolean
+      italic?: boolean
+      color?: string
+      align?: string
+      opacity?: number
+    }
+  | {
+      op: 'highlight'
+      page: number
+      quads: Array<[number, number, number, number]>
+      color?: string
+      opacity?: number
+    }
+  | {
+      op: 'underline'
+      page: number
+      quads: Array<[number, number, number, number]>
+      color?: string
+    }
+  | {
+      op: 'strikeout'
+      page: number
+      quads: Array<[number, number, number, number]>
+      color?: string
+    }
+  | {
+      op: 'note'
+      page: number
+      x: number
+      y: number
+      text: string
+      color?: string
+    }
+  | {
+      op: 'rect'
+      page: number
+      x: number
+      y: number
+      w: number
+      h: number
+      stroke?: string
+      fill?: string | null
+      strokeWidth?: number
+      opacity?: number
+    }
+  | {
+      op: 'ellipse'
+      page: number
+      x: number
+      y: number
+      w: number
+      h: number
+      stroke?: string
+      fill?: string | null
+      strokeWidth?: number
+      opacity?: number
+    }
+  | {
+      op: 'line'
+      page: number
+      from: [number, number]
+      to: [number, number]
+      color?: string
+      width?: number
+      arrow?: string
+    }
+  | {
+      op: 'freeDraw'
+      page: number
+      paths: Array<Array<[number, number]>>
+      color?: string
+      width?: number
+      opacity?: number
+    }
+  | {
+      op: 'whiteout'
+      page: number
+      x: number
+      y: number
+      w: number
+      h: number
+      color?: string | null
+    }
+  | {
+      op: 'image'
+      page: number
+      x: number
+      y: number
+      w: number
+      h: number
+      imagePath: string
+      rotation?: number
+      opacity?: number
+    }
+  | {
+      op: 'stamp'
+      page: number
+      x: number
+      y: number
+      w: number
+      h: number
+      stamp: string
+      customText?: string | null
+      color?: string
+    }
+  | { op: 'formFill'; field: string; value: string }
+
+export async function editListText(path: string, page: number): Promise<TextRun[]> {
+  return invoke('edit_list_text', { path, page })
+}
+
+export async function editPdf(
+  path: string,
+  output: string,
+  ops: EditOp[],
+  flatten: boolean,
+): Promise<OpResult> {
+  return invoke('edit_pdf', { path, output, ops, flatten })
 }
 
 /** Normalized rect (0–1, top-left) → PDF points (bottom-left). */

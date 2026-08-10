@@ -19,10 +19,10 @@ playful-técnico · press-shop / banana stamp
 See `tokens.css`
 
 ## Macrostructure
-Workbench — N3 side rail (numbered 01–22) + sheet canvas
+Workbench — N3 side rail (numbered 01–23) + sheet canvas
 
 ## Tools (rail)
-01–08 core (incl. Extraer) · 09 Proteger · 10 Reparar · 11 Metadatos · 12 Numerar · 13 Office · 14 PDF/A · 15 OCR · 16 Censura · 17 Recorte · 18 Marca de agua · 19 Comparar · 20 Firmar · 21 Markdown · 22 IA  
+01–08 core (incl. Extraer) · 09 Proteger · 10 Reparar · 11 Metadatos · 12 Numerar · 13 Office · 14 PDF/A · 15 OCR · 16 Censura · 17 Recorte · 18 Marca de agua · 19 Comparar · 20 Firmar · 21 Editar · 22 Markdown · 23 IA  
 Ajustes = icono fijo en el pie del rail (no hace scroll con la lista)
 
 ## Voice

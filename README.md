@@ -49,6 +49,11 @@ Design system: see [`design.md`](design.md) + [`tokens.css`](tokens.css) (Hallma
 - **PDF/A** — exporta A-1b / A-2b / A-3b vía LibreOffice (`SelectPdfVersion`)
 - **Extraer** — imágenes embebidas (XObject JPEG/PNG) o texto a TXT
 
+### Phase 9 — Editar PDF (rail 21)
+- Editor visual sobre el canvas: editar texto existente (reemplazo quirúrgico o tapar+reescribir), añadir texto, anotar (resaltar/subrayar/tachar/nota), formas, borrador a mano alzada, imagen, sellos, borrado blanco, formularios
+- Anotaciones PDF reales con appearance streams + opción **Aplanar** al guardar
+- Undo/redo, lista de ediciones, zoom/páginas, CTA «Guardar cambios»
+
 ## Prerequisites
 
 - Node.js 20+
