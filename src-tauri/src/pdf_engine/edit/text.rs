@@ -267,6 +267,7 @@ pub fn replace_text_run(
     page: u32,
     run_id: u32,
     new_text: &str,
+    fit_width: Option<f32>,
 ) -> Result<ReplaceOutcome, AppError> {
     let pages = doc.get_pages();
     let page_id = *pages
@@ -280,17 +281,19 @@ pub fn replace_text_run(
         .cloned()
         .ok_or_else(|| AppError::InvalidInput(format!("Run {run_id} no encontrado")))?;
 
-    if !run.editable {
-        return overlay_replace(doc, page_id, &run, new_text);
-    }
+    let avail = fit_width.filter(|w| *w > 0.0).unwrap_or(run.w);
 
-    match surgical_replace(doc, page_id, run_id, &run, new_text) {
+    // Try surgical first for ALL fonts — it just swaps the text bytes in the
+    // existing Tj/TJ operator, keeping the original font/size/position. This
+    // is the only path that produces text identical to the document. Only
+    // fall back to overlay (white box + Helvetica) if surgical truly fails.
+    match surgical_replace(doc, page_id, run_id, &run, new_text, avail) {
         Ok(()) => Ok(ReplaceOutcome::Surgical),
         Err(e) => {
             let warning = format!(
                 "Reemplazo quirúrgico falló ({e}); se usó tapar+reescribir en run {run_id}"
             );
-            overlay_replace(doc, page_id, &run, new_text)?;
+            overlay_replace(doc, page_id, &run, new_text, avail)?;
             Ok(ReplaceOutcome::Overlay { warning })
         }
     }
@@ -302,6 +305,7 @@ fn surgical_replace(
     run_id: u32,
     run: &TextRun,
     new_text: &str,
+    avail_width: f32,
 ) -> Result<(), AppError> {
     let fonts = doc
         .get_page_fonts(page_id)
@@ -340,7 +344,7 @@ fn surgical_replace(
                         .and_then(|k| encodings.get(k))
                         .ok_or_else(|| AppError::Pdf("Sin encoding para la fuente".into()))?;
 
-                    let old_w = run.w.max(1.0);
+                    let old_w = avail_width.max(1.0);
                     let new_w = text_width(new_text, run.font_size).max(0.5);
                     if new_w > old_w * 1.02 {
                         // Scale horizontally to fit
@@ -389,12 +393,13 @@ fn overlay_replace(
     page_id: ObjectId,
     run: &TextRun,
     new_text: &str,
+    avail_width: f32,
 ) -> Result<ReplaceOutcome, AppError> {
     // Cover the original glyph box: descenders sit below the baseline,
     // ascenders above it.
     let x = run.x - 1.0;
     let y = run.y - run.h * 0.26;
-    let w = run.w + 2.0;
+    let w = avail_width.max(run.w) + 2.0;
     let h = run.h * 1.12;
 
     let mut ops = vec![

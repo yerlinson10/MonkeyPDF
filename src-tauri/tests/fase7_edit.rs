@@ -88,6 +88,7 @@ fn replace_text_surgical() {
             page: 1,
             run_id: run.run_id,
             new_text: "NewLabel".into(),
+            fit_width: None,
         }],
         false,
         None,

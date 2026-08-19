@@ -661,7 +661,14 @@ export interface TextRun {
 }
 
 export type EditOp =
-  | { op: 'replaceText'; page: number; runId: number; newText: string }
+  | {
+      op: 'replaceText'
+      page: number
+      runId: number
+      newText: string
+      /** Points of horizontal room the text may use; defaults to the run's width. */
+      fitWidth?: number
+    }
   | {
       op: 'addText'
       page: number

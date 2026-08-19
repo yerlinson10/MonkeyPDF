@@ -22,6 +22,11 @@ pub enum EditOp {
         page: u32,
         run_id: u32,
         new_text: String,
+        /// Horizontal space the text may occupy, in points. Defaults to the
+        /// run's own width; a line edit passes the whole line so the text is
+        /// not squeezed into the first fragment.
+        #[serde(default)]
+        fit_width: Option<f32>,
     },
     #[serde(rename_all = "camelCase")]
     AddText {
@@ -253,9 +258,10 @@ pub fn edit_pdf(
             page,
             run_id,
             new_text,
+            fit_width,
         } = op
         {
-            match text::replace_text_run(&mut doc, *page, *run_id, new_text)? {
+            match text::replace_text_run(&mut doc, *page, *run_id, new_text, *fit_width)? {
                 text::ReplaceOutcome::Surgical => {}
                 text::ReplaceOutcome::Overlay { warning } => warnings.push(warning),
             }
@@ -592,6 +598,7 @@ mod tests {
                 page: 1,
                 run_id: run.run_id,
                 new_text: "NewLabel".into(),
+                fit_width: None,
             }],
             false,
             None,
