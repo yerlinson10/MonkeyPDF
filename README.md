@@ -6,53 +6,49 @@ Design system: see [`design.md`](design.md) + [`tokens.css`](tokens.css) (Hallma
 
 ## Features
 
-### Phase 1 — Núcleo
-- Merge / Split / Rotate / Compress
-- PDF → JPG (PDFium) · JPG/PNG/WebP → PDF
+23 herramientas en el rail (más **Ajustes** en el pie). Orden = rail.
 
-### Phase 2 — Suite
-- Protect / Unlock (RC4 128-bit via lopdf)
-- Page numbers
-- Office ↔ PDF via **LibreOffice headless** (`soffice` on PATH or Program Files)
-
-### Phase 3 — OCR, Censura, Recorte, Comparar
-- **OCR** via system [Tesseract](https://github.com/tesseract-ocr/tesseract) (`tesseract` on PATH or `C:\Program Files\Tesseract-OCR\`) → Markdown / TXT / searchable PDF; langs `spa` / `eng` / `spa+eng`
-- **Censura** — black burn + page flatten (no copyable text / form fields under redaction)
-- **Recorte** — CropBox + MediaBox
-- **Comparar** — side-by-side A|B, sync scroll, text report + visual heatmap, export `compare.md`
-
-### Phase 4 — Markdown + IA
-- PDF → Markdown (heuristics)
-- Summarize / Translate with your API key (OpenAI · Anthropic · Ollama)
-- Settings stored locally (`tauri-plugin-store`)
-
-### Phase 5 — Firmar + formularios
-- Editor de firma / iniciales / logo (escribir con fuentes cursivas, dibujar, subir imagen)
-- Arrastrar al PDF, mover, redimensionar, eliminar; editar un activo actualiza todas las instancias
-- Detección de campos AcroForm (rellenar + «Firmar aquí» en campos de firma)
-- Horneado visual al PDF (no es firma criptográfica PKCS#7)
-
-### Phase 6 — Reparar, Marca de agua, Ordenar
-- **Reparar** — diagnóstico + re-guardado limpio + reparación best-effort (xref, streams, huérfanos)
-- **Marca de agua** — texto o imagen · posición 3×3 · mosaico · transparencia · rotación · capa
-- **Ordenar** — multi-archivo, grid de páginas arrastrable, rotar/borrar/insertar
-
-### Phase 7 — Usabilidad
-- Progreso % + cancelar en OCR, PDF→JPG, Comprimir, Ordenar
-- Historial de recientes en la hoja de inicio
-- Atajos: `Ctrl+K` busca · `Esc` cierra · `1–9` tools · `Ctrl+Enter` ejecuta
-- Preferencias por herramienta (última calidad, ángulo, marca de agua…)
-- **Metadatos** — leer/editar Info del PDF
-- Lote por carpeta en Comprimir / Rotar / Marca de agua
-
-### Phase 8 — PDF/A + Extraer
-- **PDF/A** — exporta A-1b / A-2b / A-3b vía LibreOffice (`SelectPdfVersion`)
+### Núcleo
+- **Unir** — varios PDFs → uno, en el orden que elijas
+- **Dividir** — extrae rangos de páginas a nuevos PDFs
+- **Ordenar** — multi-archivo, grid arrastrable, rotar / borrar / insertar páginas
+- **Rotar** — 90° / 180° / 270°, páginas concretas o documento; lote por carpeta
+- **Comprimir** — recomprime imágenes o rasteriza a JPEG; lote por carpeta
+- **PDF → JPG** — PDFium, DPI configurable
+- **JPG → PDF** — JPG / PNG / WebP, ajuste proporcional
 - **Extraer** — imágenes embebidas (XObject JPEG/PNG) o texto a TXT
 
-### Phase 9 — Editar PDF (rail 21)
-- Editor visual sobre el canvas: editar texto existente (reemplazo quirúrgico o tapar+reescribir), añadir texto, anotar (resaltar/subrayar/tachar/nota), formas, borrador a mano alzada, imagen, sellos, borrado blanco, formularios
-- Anotaciones PDF reales con appearance streams + opción **Aplanar** al guardar
-- Undo/redo, lista de ediciones, zoom/páginas, CTA «Guardar cambios»
+### Suite
+- **Proteger** — añadir o quitar contraseña de apertura (RC4 128-bit, lopdf)
+- **Reparar** — diagnóstico + re-guardado limpio + reparación best-effort (xref, streams, huérfanos)
+- **Metadatos** — leer/editar título, autor, asunto, palabras clave y fechas
+- **Numerar** — sello de página (posición, formato, inicio, tamaño)
+- **Office** — Word / Excel / PowerPoint / HTML / ODT / ODS / ODP ↔ PDF vía **LibreOffice** headless (`soffice` en PATH o Program Files)
+- **PDF/A** — exporta A-1b / A-2b / A-3b (`SelectPdfVersion`)
+
+### Avanzado
+- **OCR** — [Tesseract](https://github.com/tesseract-ocr/tesseract) del sistema (`tesseract` en PATH o `C:\Program Files\Tesseract-OCR\`) → Markdown / TXT / PDF buscable; idiomas `spa` / `eng` / `spa+eng`
+- **Censura** — negro permanente + flatten (sin texto ni campos copiables debajo)
+- **Recorte** — CropBox + MediaBox
+- **Marca de agua** — texto o imagen · posición 3×3 · mosaico · transparencia · rotación · capa; lote por carpeta
+- **Comparar** — A|B, scroll sincronizado, informe de texto + heatmap visual, export `compare.md`
+- **Firmar** — firma / iniciales / logo (escribir con fuentes cursivas, dibujar, subir imagen); arrastrar, mover, redimensionar; editar un activo actualiza todas las instancias; campos AcroForm (rellenar + «Firmar aquí»); sello de fecha; horneado visual (no es PKCS#7)
+- **Editar** — canvas: texto existente (reemplazo o tapar+reescribir), añadir texto, anotar (resaltar / subrayar / tachar / nota), formas, mano alzada, imagen, sellos, borrado blanco, formularios; anotaciones PDF con appearance streams + **Aplanar**; undo/redo, zoom, páginas
+
+### Markdown + IA
+- **Markdown** — PDF → MD (heurísticas de títulos y tablas)
+- **IA** — resumir o traducir con tu clave: OpenAI · Anthropic · **OpenRouter** · Ollama
+- **Ajustes** — rutas de salida (carpeta por defecto + override por herramienta) y claves/modelos de IA, guardados en disco (`tauri-plugin-store`)
+
+### Usabilidad (todas las herramientas)
+- Arrastrar y soltar archivos; previsualización de páginas (zoom / pan)
+- Progreso % + cancelar (OCR, PDF→JPG, Comprimir, Ordenar, Editar, lotes)
+- Historial de recientes en la hoja de inicio (abrir en Explorer / repetir herramienta)
+- Atajos: `Ctrl+K` busca · `Esc` cierra · `1–9` primeras tools · `Ctrl+O` abre archivo · `Ctrl+Enter` ejecuta
+- Preferencias por herramienta (última calidad, ángulo, marca de agua…)
+- Notificación nativa al terminar (clic abre Explorer en la salida)
+- Menú contextual (copiar, pegar rutas, revelar en Explorer)
+- Portapapeles del sistema (Tauri) para texto seleccionado en previews
 
 ## Prerequisites
 
