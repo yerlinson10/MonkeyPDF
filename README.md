@@ -17,6 +17,7 @@ Unir, dividir, comprimir, firmar, OCR, Office y 23 herramientas en un workbench.
 - [Compilar](#compilar)
 - [Arquitectura](#arquitectura)
 - [Privacidad](#privacidad)
+- [Lista de funciones](#lista-de-funciones)
 
 ---
 
@@ -130,3 +131,59 @@ Diseño interno: [`design.md`](design.md) y [`tokens.css`](tokens.css).
 ## Licencia
 
 Aún no hay archivo `LICENSE` en el repo. Añádelo antes de publicar (MIT, Apache-2.0, GPL, etc.) y enlázalo aquí.
+
+---
+
+## Lista de funciones
+
+Orden del rail (01–23). **Ajustes** vive en el pie, no en la lista.
+
+### Núcleo
+
+1. **Unir PDF** — Combina varios PDFs en un solo archivo, en el orden que elijas.
+2. **Dividir PDF** — Extrae rangos de páginas a nuevos PDFs.
+3. **Ordenar** — Reordena, rota o elimina páginas; mezcla varios PDFs; grid arrastrable; insertar páginas.
+4. **Rotar PDF** — 90° / 180° / 270°, páginas concretas o documento completo; lote por carpeta.
+5. **Comprimir PDF** — Recomprime imágenes o rasteriza páginas a JPEG; lote por carpeta.
+6. **PDF a JPG** — Renderiza cada página como JPG (PDFium, DPI configurable).
+7. **JPG a PDF** — Empaqueta JPG / PNG / WebP en un PDF con ajuste proporcional.
+8. **Extraer** — Imágenes embebidas (JPEG/PNG) o texto plano a TXT.
+
+### Suite
+
+9. **Proteger** — Añade o quita contraseña de apertura (RC4 128-bit).
+10. **Reparar** — Diagnóstico + re-guardado limpio + reparación best-effort (xref, streams, huérfanos).
+11. **Metadatos** — Lee y edita título, autor, asunto, palabras clave y fechas.
+12. **Numerar** — Sella números de página (posición, formato, inicio, tamaño).
+13. **Office** — Word / Excel / PowerPoint / HTML / ODT / ODS / ODP ↔ PDF vía LibreOffice headless.
+14. **PDF/A** — Exporta A-1b / A-2b / A-3b (`SelectPdfVersion`).
+
+### Avanzado
+
+15. **OCR** — Tesseract del sistema → Markdown / TXT / PDF buscable; idiomas `spa` / `eng` / `spa+eng`.
+16. **Censura** — Negro permanente + flatten (sin texto ni campos copiables debajo).
+17. **Recorte** — CropBox + MediaBox al área seleccionada.
+18. **Marca de agua** — Texto o imagen · posición 3×3 · mosaico · transparencia · rotación · capa; lote por carpeta.
+19. **Comparar** — A|B, scroll sincronizado, informe de texto + heatmap visual, export `compare.md`.
+20. **Firmar** — Firma / iniciales / logo (escribir, dibujar, subir imagen); arrastrar, mover, redimensionar; campos AcroForm; sello de fecha; horneado visual (no es PKCS#7).
+21. **Editar** — Texto (reemplazar o tapar+reescribir), añadir texto, anotar, formas, mano alzada, imagen, sellos, borrado blanco, formularios; aplanar; undo/redo; zoom.
+
+### Markdown + IA
+
+22. **Markdown** — PDF → MD con heurísticas de títulos y tablas.
+23. **IA** — Resumir o traducir con tu clave: OpenAI · Anthropic · OpenRouter · Ollama.
+
+### Ajustes
+
+- **Ajustes** — Rutas de salida (carpeta por defecto + override por herramienta) y claves/modelos de IA, guardados en disco (`tauri-plugin-store`).
+
+### Usabilidad (todas las herramientas)
+
+- Arrastrar y soltar archivos; previsualización de páginas (zoom / pan).
+- Progreso % + cancelar (OCR, PDF→JPG, Comprimir, Ordenar, Editar, lotes).
+- Historial de recientes (abrir en Explorer / repetir herramienta).
+- Atajos: `Ctrl+K` busca · `Esc` cierra · `1–9` primeras tools · `Ctrl+O` abre archivo · `Ctrl+Enter` ejecuta.
+- Preferencias por herramienta (última calidad, ángulo, marca de agua…).
+- Notificación nativa al terminar (clic abre Explorer en la salida).
+- Menú contextual (copiar, pegar rutas, revelar en Explorer).
+- Portapapeles del sistema para texto seleccionado en previews.
