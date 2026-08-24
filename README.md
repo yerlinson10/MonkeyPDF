@@ -72,6 +72,8 @@ npm run tauri:dev
 npm run tauri:build
 ```
 
+Windows NSIS installer uses the same banana-stamp art as the app (`src-tauri/windows/`). Regenerate with `npm run nsis:art`.
+
 ## Architecture
 
 - Frontend: `src/` — Svelte workbench (N3 rail + sheet)

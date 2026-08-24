@@ -7,7 +7,7 @@
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeBuildCommand": "npm run nsis:art && npm run build"
   },
   "app": {
     "windows": [
@@ -43,6 +43,17 @@
     ],
     "resources": [
       "resources/pdfium.dll"
-    ]
+    ],
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico",
+        "sidebarImage": "windows/installer-sidebar.bmp",
+        "headerImage": "windows/installer-header.bmp",
+        "uninstallerHeaderImage": "windows/installer-header.bmp",
+        "installerHooks": "windows/hooks.nsh",
+        "languages": ["Spanish", "English"]
+      }
+    }
   }
 }

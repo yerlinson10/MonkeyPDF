@@ -10,7 +10,8 @@
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
     "tauri": "node scripts/with-cargo.mjs tauri",
     "tauri:dev": "node scripts/with-cargo.mjs tauri dev",
-    "tauri:build": "node scripts/with-cargo.mjs tauri build"
+    "tauri:build": "node scripts/with-cargo.mjs tauri build",
+    "nsis:art": "node scripts/generate-nsis-art.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.2.0",
