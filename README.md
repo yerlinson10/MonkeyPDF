@@ -1,80 +1,132 @@
 # MonkeyPDF
 
-Desktop PDF toolkit built with **Tauri 2**, **Svelte 5**, **Tailwind CSS**, and **Rust**.
+Suite de PDF de escritorio. **Local, sin cuenta y sin subir archivos a la nube.**
 
-Design system: see [`design.md`](design.md) + [`tokens.css`](tokens.css) (Hallmark workbench · banana stamp).
+Windows · Tauri 2 · Svelte 5 · Rust · `v0.1.1`
 
-## Features
+Unir, dividir, comprimir, firmar, OCR, Office y 23 herramientas en un workbench. El PDF no sale de tu máquina; las claves de IA (opcional) las pones tú.
 
-23 herramientas en el rail (más **Ajustes** en el pie). Orden = rail.
+---
 
-### Núcleo
-- **Unir** — varios PDFs → uno, en el orden que elijas
-- **Dividir** — extrae rangos de páginas a nuevos PDFs
-- **Ordenar** — multi-archivo, grid arrastrable, rotar / borrar / insertar páginas
-- **Rotar** — 90° / 180° / 270°, páginas concretas o documento; lote por carpeta
-- **Comprimir** — recomprime imágenes o rasteriza a JPEG; lote por carpeta
-- **PDF → JPG** — PDFium, DPI configurable
-- **JPG → PDF** — JPG / PNG / WebP, ajuste proporcional
-- **Extraer** — imágenes embebidas (XObject JPEG/PNG) o texto a TXT
+## Contenido
 
-### Suite
-- **Proteger** — añadir o quitar contraseña de apertura (RC4 128-bit, lopdf)
-- **Reparar** — diagnóstico + re-guardado limpio + reparación best-effort (xref, streams, huérfanos)
-- **Metadatos** — leer/editar título, autor, asunto, palabras clave y fechas
-- **Numerar** — sello de página (posición, formato, inicio, tamaño)
-- **Office** — Word / Excel / PowerPoint / HTML / ODT / ODS / ODP ↔ PDF vía **LibreOffice** headless (`soffice` en PATH o Program Files)
-- **PDF/A** — exporta A-1b / A-2b / A-3b (`SelectPdfVersion`)
+- [Descargar](#descargar)
+- [Herramientas](#herramientas)
+- [Requisitos opcionales](#requisitos-opcionales)
+- [Desarrollo](#desarrollo)
+- [Compilar](#compilar)
+- [Arquitectura](#arquitectura)
+- [Privacidad](#privacidad)
 
-### Avanzado
-- **OCR** — [Tesseract](https://github.com/tesseract-ocr/tesseract) del sistema (`tesseract` en PATH o `C:\Program Files\Tesseract-OCR\`) → Markdown / TXT / PDF buscable; idiomas `spa` / `eng` / `spa+eng`
-- **Censura** — negro permanente + flatten (sin texto ni campos copiables debajo)
-- **Recorte** — CropBox + MediaBox
-- **Marca de agua** — texto o imagen · posición 3×3 · mosaico · transparencia · rotación · capa; lote por carpeta
-- **Comparar** — A|B, scroll sincronizado, informe de texto + heatmap visual, export `compare.md`
-- **Firmar** — firma / iniciales / logo (escribir con fuentes cursivas, dibujar, subir imagen); arrastrar, mover, redimensionar; editar un activo actualiza todas las instancias; campos AcroForm (rellenar + «Firmar aquí»); sello de fecha; horneado visual (no es PKCS#7)
-- **Editar** — canvas: texto existente (reemplazo o tapar+reescribir), añadir texto, anotar (resaltar / subrayar / tachar / nota), formas, mano alzada, imagen, sellos, borrado blanco, formularios; anotaciones PDF con appearance streams + **Aplanar**; undo/redo, zoom, páginas
+---
 
-### Markdown + IA
-- **Markdown** — PDF → MD (heurísticas de títulos y tablas)
-- **IA** — resumir o traducir con tu clave: OpenAI · Anthropic · **OpenRouter** · Ollama
-- **Ajustes** — rutas de salida (carpeta por defecto + override por herramienta) y claves/modelos de IA, guardados en disco (`tauri-plugin-store`)
+## Descargar
 
-### Usabilidad (todas las herramientas)
-- Arrastrar y soltar archivos; previsualización de páginas (zoom / pan)
-- Progreso % + cancelar (OCR, PDF→JPG, Comprimir, Ordenar, Editar, lotes)
-- Historial de recientes en la hoja de inicio (abrir en Explorer / repetir herramienta)
-- Atajos: `Ctrl+K` busca · `Esc` cierra · `1–9` primeras tools · `Ctrl+O` abre archivo · `Ctrl+Enter` ejecuta
-- Preferencias por herramienta (última calidad, ángulo, marca de agua…)
-- Notificación nativa al terminar (clic abre Explorer en la salida)
-- Menú contextual (copiar, pegar rutas, revelar en Explorer)
-- Portapapeles del sistema (Tauri) para texto seleccionado en previews
+Instalador NSIS para Windows x64 (usuario actual, sin privilegios de administrador):
 
-## Prerequisites
+```text
+src-tauri/target/release/bundle/nsis/
+```
+
+Tras `npm run tauri:build:nsis` el artefacto listo para distribuir es el instalador envuelto (HTML + motor WebView).
+
+Primera ejecución: hoja de bienvenida en la app.
+
+---
+
+## Herramientas
+
+23 herramientas en el rail + **Ajustes** en el pie. Arrastrar y soltar, vista previa con zoom/pan, progreso y cancelar, recientes, atajos (`Ctrl+K`, `Ctrl+O`, `Ctrl+Enter`, `Esc`, `1–9`).
+
+| Grupo | Herramientas |
+| --- | --- |
+| **Núcleo** | Unir · Dividir · Ordenar · Rotar · Comprimir · PDF → JPG · JPG → PDF · Extraer (imágenes / texto) |
+| **Suite** | Proteger (contraseña RC4) · Reparar · Metadatos · Numerar · Office (LibreOffice) · PDF/A |
+| **Avanzado** | OCR (Tesseract) · Censura permanente · Recorte · Marca de agua · Comparar · Firmar · Editar |
+| **Markdown + IA** | PDF → Markdown · Resumir / traducir (OpenAI, Anthropic, OpenRouter, Ollama) |
+
+Notas rápidas:
+
+- **Firmar** es sello visual (texto, dibujo, imagen, AcroForm). No es PKCS#7 / certificado digital.
+- **Office** y **PDF/A** usan LibreOffice headless (`soffice`).
+- **OCR** usa Tesseract del sistema (`spa` / `eng`).
+- Lote por carpeta en rotar, comprimir y marca de agua.
+
+---
+
+## Requisitos opcionales
+
+| Para | Qué instalar |
+| --- | --- |
+| Word / Excel / PowerPoint / HTML / ODT ↔ PDF y PDF/A | [LibreOffice](https://www.libreoffice.org/) (`soffice` en PATH o Program Files) |
+| OCR | [Tesseract](https://github.com/UB-Mannheim/tesseract/wiki) con paquetes **spa** y **eng** |
+| Firmas cursivas | Las fuentes se descargan de Google Fonts (Great Vibes, Dancing Script, Sacramento, Allura) |
+
+El núcleo del PDF (unir, dividir, comprimir, editar, etc.) no necesita nada extra. PDFium para Windows x64 va en `src-tauri/resources/pdfium.dll`.
+
+---
+
+## Desarrollo
+
+### Requisitos
 
 - Node.js 20+
-- Rust (stable) + MSVC Build Tools (Windows)
-- `src-tauri/resources/pdfium.dll` (Windows x64 included)
-- Optional: [LibreOffice](https://www.libreoffice.org/) for Office conversions
-- Optional: [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) with language packs **spa** and **eng** for OCR
-- Optional: red for cursive signature fonts (Google Fonts: Great Vibes, Dancing Script, Sacramento, Allura)
-
-## Develop
+- Rust stable
+- Windows: [MSVC Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 
 ```bash
 npm install
 npm run tauri:dev
 ```
 
-## Build
+### Scripts
+
+| Comando | Qué hace |
+| --- | --- |
+| `npm run tauri:dev` | App en modo desarrollo |
+| `npm run tauri:build` | Bundle Tauri (NSIS + recursos) |
+| `npm run tauri:build:nsis` | NSIS + desinstalador + envoltorio HTML del instalador |
+| `npm run nsis:art` | Regenera arte del instalador |
+| `npm run check` | Typecheck Svelte / TypeScript |
+
+El instalador NSIS usa plantilla propia (`src-tauri/windows/installer.nsi`), idiomas ES/EN y paleta banana-stamp.
+
+---
+
+## Compilar
 
 ```bash
-npm run tauri:build
+npm install
+npm run tauri:build:nsis
 ```
 
-Windows NSIS installer uses a forked template (`src-tauri/windows/installer.nsi`) with banana-stamp colors, custom buttons, and Spanish/English. Art: `npm run nsis:art`. First launch shows an in-app welcome sheet.
+Salida típica: `src-tauri/target/release/bundle/nsis/` y el instalador envuelto que genera `wrap:installer`.
 
-## Architecture
+---
 
-- Frontend: `src/` — Svelte workbench (N3 rail + sheet)
-- Backend: `src-tauri/src/pdf_engine/` — lopdf · pdfium-render · LibreOffice · Tesseract · signatures · reqwest
+## Arquitectura
+
+```text
+src/                      UI Svelte (rail + hoja)
+src-tauri/src/pdf_engine/ Motor Rust (lopdf, pdfium-render, qpdf, LibreOffice, Tesseract, firmas)
+src-tauri/windows/        Plantilla NSIS e iconos
+installer-webview/        Envoltorio visual del instalador
+```
+
+Ajustes (rutas de salida, claves y modelos de IA) se guardan en disco con `tauri-plugin-store`.
+
+Diseño interno: [`design.md`](design.md) y [`tokens.css`](tokens.css).
+
+---
+
+## Privacidad
+
+- Los PDF se procesan **en local**.
+- La IA es opt-in: la petición sale a la API que configures (o a Ollama en tu red).
+- Sin telemetría de producto en este repositorio.
+
+---
+
+## Licencia
+
+Aún no hay archivo `LICENSE` en el repo. Añádelo antes de publicar (MIT, Apache-2.0, GPL, etc.) y enlázalo aquí.
