@@ -17,9 +17,14 @@ if (!existsSync(nsisDir)) {
   process.exit(1)
 }
 
-const setup = readdirSync(nsisDir).find(
+const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
+const version = pkg.version
+const setups = readdirSync(nsisDir).filter(
   (f) => f.endsWith('-setup.exe') && !f.includes('installer') && !f.includes('html') && !f.includes('new'),
 )
+const setup =
+  setups.find((f) => f.includes(`_${version}_`)) ||
+  setups.sort().at(-1)
 if (!setup) {
   console.error('No encontré el setup NSIS en', nsisDir)
   process.exit(1)
