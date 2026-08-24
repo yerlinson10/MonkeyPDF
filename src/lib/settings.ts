@@ -176,3 +176,18 @@ export const AI_PROVIDERS: { id: AiProviderId; label: string }[] = [
   { id: 'openrouter', label: 'OpenRouter' },
   { id: 'ollama', label: 'Ollama' },
 ]
+
+export async function loadOnboardingDone(): Promise<boolean> {
+  try {
+    const s = getStore()
+    return (await s.get<boolean>('onboardingDone')) === true
+  } catch {
+    return false
+  }
+}
+
+export async function saveOnboardingDone(): Promise<void> {
+  const s = getStore()
+  await s.set('onboardingDone', true)
+  await s.save()
+}

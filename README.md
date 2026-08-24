@@ -72,7 +72,7 @@ npm run tauri:dev
 npm run tauri:build
 ```
 
-Windows NSIS installer uses the same banana-stamp art as the app (`src-tauri/windows/`). Regenerate with `npm run nsis:art`.
+Windows NSIS installer uses a forked template (`src-tauri/windows/installer.nsi`) with banana-stamp colors, custom buttons, and Spanish/English. Art: `npm run nsis:art`. First launch shows an in-app welcome sheet.
 
 ## Architecture
 

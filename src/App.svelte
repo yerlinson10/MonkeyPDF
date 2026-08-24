@@ -30,11 +30,14 @@
   import AiView from './lib/tools/AiView.svelte'
   import SettingsView from './lib/tools/SettingsView.svelte'
   import AppContextMenu from './lib/components/AppContextMenu.svelte'
+  import OnboardOverlay from './lib/components/OnboardOverlay.svelte'
+  import { loadOnboardingDone, saveOnboardingDone } from './lib/settings'
 
   let activeTool = $state<ToolId | null>(null)
   let toolQuery = $state('')
   let history = $state<HistoryEntry[]>([])
   let searchEl = $state<HTMLInputElement | null>(null)
+  let showOnboard = $state(false)
 
   const activeMeta = $derived(TOOLS.find((t) => t.id === activeTool) ?? null)
 
@@ -88,6 +91,9 @@
   onMount(() => {
     void initNotifications()
     void refreshHistory()
+    void loadOnboardingDone().then((done) => {
+      showOnboard = !done
+    })
     const onHist = () => void refreshHistory()
     window.addEventListener('mp-history', onHist)
 
@@ -355,3 +361,12 @@
 </div>
 
 <AppContextMenu />
+
+{#if showOnboard}
+  <OnboardOverlay
+    ondone={() => {
+      showOnboard = false
+      void saveOnboardingDone()
+    }}
+  />
+{/if}

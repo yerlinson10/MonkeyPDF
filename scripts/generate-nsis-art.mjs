@@ -79,8 +79,7 @@ async function sidebar() {
       ${dots.join('')}
       <rect x="21" y="27" width="122" height="122" fill="#0E1612"/>
       <rect x="18" y="24" width="122" height="122" fill="#111A14" stroke="#FBB90A" stroke-width="2"/>
-      <rect x="18" y="248" width="128" height="48" fill="#0E1612"/>
-      <rect x="15" y="245" width="128" height="48" fill="#FAF8F2" stroke="#0E1612" stroke-width="2"/>
+      <rect x="15" y="245" width="128" height="48" rx="8" ry="8" fill="#FAF8F2"/>
       <text x="27" y="266" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="800" fill="#111A14">MONKEY</text>
       <text x="27" y="283" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="800" fill="#FBB90A">PDF</text>
     </svg>`,
@@ -141,9 +140,60 @@ async function header() {
   return toBmp(sharp(composed), w, h, PAPER)
 }
 
+/** Rounded pills on paper so they sit on the cream footer like the mock. */
+async function stampButton(label, kind) {
+  const primary = kind === 'primary'
+  const w = primary ? 168 : 128
+  const h = 42
+  const svg = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
+      <rect width="100%" height="100%" fill="#FAF8F2"/>
+      <rect x="1" y="1" width="${w - 2}" height="${h - 2}" rx="21" ry="21"
+        fill="${primary ? '#FBB90A' : '#FAF8F2'}"
+        stroke="${primary ? '#FBB90A' : '#C8C4BA'}" stroke-width="1.5"/>
+      <text x="${primary ? 98 : w / 2}" y="27" text-anchor="middle"
+        font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800"
+        fill="#111A14">${label}</text>
+    </svg>`,
+  )
+  let png = await sharp(svg).png().toBuffer()
+  if (primary) {
+    let glyph
+    try {
+      glyph = await sharp(await readFile(favicon))
+        .resize(22, 22, { fit: 'contain', background: { r: 251, g: 185, b: 10, alpha: 1 } })
+        .png()
+        .toBuffer()
+    } catch {
+      glyph = await sharp(iconPng).resize(22, 22).png().toBuffer()
+    }
+    png = await sharp(png)
+      .composite([{ input: glyph, left: 22, top: 10 }])
+      .png()
+      .toBuffer()
+  }
+  return toBmp(sharp(png), w, h, PAPER)
+}
+
 await mkdir(outDir, { recursive: true })
-const sideBmp = await sidebar()
-const headBmp = await header()
-await writeFile(join(outDir, 'installer-sidebar.bmp'), sideBmp)
-await writeFile(join(outDir, 'installer-header.bmp'), headBmp)
-console.log('NSIS art → src-tauri/windows/installer-sidebar.bmp + installer-header.bmp')
+await writeFile(join(outDir, 'installer-sidebar.bmp'), await sidebar())
+await writeFile(join(outDir, 'installer-header.bmp'), await header())
+
+const buttons = [
+  ['btn-next-es.bmp', 'SIGUIENTE', 'primary'],
+  ['btn-next-en.bmp', 'NEXT', 'primary'],
+  ['btn-install-es.bmp', 'INSTALAR', 'primary'],
+  ['btn-install-en.bmp', 'INSTALL', 'primary'],
+  ['btn-finish-es.bmp', 'FINALIZAR', 'primary'],
+  ['btn-finish-en.bmp', 'FINISH', 'primary'],
+  ['btn-back-es.bmp', 'ATRÁS', 'ghost'],
+  ['btn-back-en.bmp', 'BACK', 'ghost'],
+  ['btn-cancel-es.bmp', 'CANCELAR', 'ghost'],
+  ['btn-cancel-en.bmp', 'CANCEL', 'ghost'],
+  ['btn-uninstall-es.bmp', 'QUITAR', 'ghost'],
+  ['btn-uninstall-en.bmp', 'REMOVE', 'ghost'],
+]
+for (const [name, label, kind] of buttons) {
+  await writeFile(join(outDir, name), await stampButton(label, kind))
+}
+console.log('NSIS art → sidebar, header, stamp buttons')
