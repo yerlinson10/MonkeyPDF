@@ -140,39 +140,25 @@ async function header() {
   return toBmp(sharp(composed), w, h, PAPER)
 }
 
-/** Rounded pills on paper so they sit on the cream footer like the mock. */
+/**
+ * Exact 120×32 / 108×32. LoadImage stretches these to the DPI-sized HWND.
+ * Centered label, full-bleed fill — no rounding (Win32 clips pills).
+ */
 async function stampButton(label, kind) {
   const primary = kind === 'primary'
-  const w = primary ? 168 : 128
-  const h = 42
+  const w = primary ? 120 : 108
+  const h = 32
+  const fill = primary ? '#FBB90A' : '#EEECE6'
   const svg = Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
-      <rect width="100%" height="100%" fill="#FAF8F2"/>
-      <rect x="1" y="1" width="${w - 2}" height="${h - 2}" rx="21" ry="21"
-        fill="${primary ? '#FBB90A' : '#FAF8F2'}"
-        stroke="${primary ? '#FBB90A' : '#C8C4BA'}" stroke-width="1.5"/>
-      <text x="${primary ? 98 : w / 2}" y="27" text-anchor="middle"
-        font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="800"
+      <rect width="100%" height="100%" fill="${fill}"/>
+      <text x="${w / 2}" y="21" text-anchor="middle"
+        font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="800"
         fill="#111A14">${label}</text>
     </svg>`,
   )
-  let png = await sharp(svg).png().toBuffer()
-  if (primary) {
-    let glyph
-    try {
-      glyph = await sharp(await readFile(favicon))
-        .resize(22, 22, { fit: 'contain', background: { r: 251, g: 185, b: 10, alpha: 1 } })
-        .png()
-        .toBuffer()
-    } catch {
-      glyph = await sharp(iconPng).resize(22, 22).png().toBuffer()
-    }
-    png = await sharp(png)
-      .composite([{ input: glyph, left: 22, top: 10 }])
-      .png()
-      .toBuffer()
-  }
-  return toBmp(sharp(png), w, h, PAPER)
+  const png = await sharp(svg).png().toBuffer()
+  return toBmp(sharp(png), w, h, { r: 238, g: 236, b: 230 })
 }
 
 await mkdir(outDir, { recursive: true })

@@ -786,6 +786,11 @@ Function un.onInit
  ${IfNot} ${Errors}
  StrCpy $UpdateMode 1
  ${EndIf}
+
+ ${GetOptions} $CMDLINE "/DATA" $R9
+ ${IfNot} ${Errors}
+ StrCpy $DeleteAppDataCheckboxState 1
+ ${EndIf}
 FunctionEnd
 
 Section Uninstall
@@ -827,6 +832,7 @@ Section Uninstall
 
  ; Delete uninstaller
  Delete "$INSTDIR\uninstall.exe"
+ Delete "$INSTDIR\unins000.exe"
 
  {{#each resources_ancestors}}
  RMDir /REBOOTOK "$INSTDIR\\{{this}}"
@@ -919,10 +925,16 @@ Function Skip
 FunctionEnd
 
 Function SkipIfPassive
- ${IfThen} $PassiveMode = 1 ${|} Abort ${|}
+ ${If} $PassiveMode = 1
+ ${OrIf} ${Silent}
+ Abort
+ ${EndIf}
 FunctionEnd
 Function un.SkipIfPassive
- ${IfThen} $PassiveMode = 1 ${|} Abort ${|}
+ ${If} $PassiveMode = 1
+ ${OrIf} ${Silent}
+ Abort
+ ${EndIf}
 FunctionEnd
 
 Function CreateOrUpdateStartMenuShortcut

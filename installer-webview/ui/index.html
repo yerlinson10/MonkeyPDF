@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MonkeyPDF Setup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Hallmark · component: html-installer · genre: playful · theme: press-shop banana
+       * states: default · hover · focus · active · disabled · loading · error · success
+       * contrast: pass
+       */
+      :root {
+        --desk: #111a14;
+        --desk-2: #18241c;
+        --paper: #faf8f2;
+        --paper-2: #f0ece3;
+        --ink: #111a14;
+        --mute: #5c6b62;
+        --line: #d9d4c8;
+        --banana: #fbb90a;
+        --ok: #1f6b3a;
+        --bad: #9b2c1a;
+        --font: "Syne", system-ui, sans-serif;
+        --stamp: 3px 3px 0 var(--ink);
+        --ease: cubic-bezier(0.215, 0.61, 0.355, 1);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        font-family: var(--font);
+        background: var(--desk);
+        color: var(--ink);
+      }
+      .shell {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        height: 100%;
+      }
+      .rail {
+        background: var(--desk);
+        color: var(--paper);
+        padding: 28px 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background-image: radial-gradient(rgba(250, 248, 242, 0.08) 1px, transparent 1px);
+        background-size: 14px 14px;
+      }
+      .mark {
+        width: 108px;
+        display: block;
+      }
+      .mark svg {
+        width: 108px;
+        height: auto;
+        display: block;
+      }
+      .word {
+        background: var(--paper);
+        color: var(--ink);
+        padding: 10px 12px;
+        border-radius: 6px;
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+      }
+      .word b {
+        color: var(--banana);
+        -webkit-text-stroke: 0.4px var(--ink);
+      }
+      .sheet {
+        background: var(--paper);
+        padding: 36px 40px 28px;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      h1 {
+        margin: 0;
+        font-size: 2.15rem;
+        font-weight: 800;
+        font-style: normal;
+        line-height: 1.05;
+      }
+      .lede {
+        margin: 14px 0 0;
+        color: var(--mute);
+        font-size: 15px;
+        line-height: 1.5;
+        font-weight: 500;
+        max-width: 42ch;
+      }
+      .grow {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        gap: 16px;
+        padding-top: 28px;
+      }
+      label {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .path-row {
+        display: flex;
+        gap: 8px;
+      }
+      input[type="text"] {
+        flex: 1;
+        min-width: 0;
+        height: 44px;
+        border: 2px solid var(--ink);
+        background: #fff;
+        padding: 0 12px;
+        font: 500 13px var(--font);
+        color: var(--ink);
+      }
+      input:focus-visible,
+      button:focus-visible {
+        outline: 3px solid var(--banana);
+        outline-offset: 2px;
+      }
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding-top: 8px;
+      }
+      button {
+        min-height: 44px;
+        min-width: 108px;
+        padding: 0 18px;
+        border: 2px solid var(--ink);
+        font: 800 13px/1 var(--font);
+        letter-spacing: 0.04em;
+        box-shadow: var(--stamp);
+        transition: transform 90ms var(--ease), background 90ms var(--ease);
+      }
+      button:active:not(:disabled),
+      button.is-active {
+        transform: translate(2px, 2px);
+        box-shadow: none;
+      }
+      .ghost {
+        background: var(--paper-2);
+        color: var(--ink);
+      }
+      .ghost:hover,
+      .ghost.is-hover {
+        background: #e7e2d6;
+      }
+      .primary {
+        background: var(--banana);
+        color: var(--ink);
+      }
+      .primary:hover,
+      .primary.is-hover {
+        filter: brightness(1.05);
+      }
+      button:disabled,
+      button.is-disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+      .status {
+        min-height: 1.3em;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .status.bad {
+        color: var(--bad);
+      }
+      .status.ok {
+        color: var(--ok);
+      }
+      .bar {
+        height: 8px;
+        background: var(--paper-2);
+        border: 2px solid var(--ink);
+        overflow: hidden;
+        display: none;
+      }
+      .bar.on {
+        display: block;
+      }
+      .bar i {
+        display: block;
+        height: 100%;
+        width: 40%;
+        background: var(--banana);
+        animation: slide 0.9s var(--ease) infinite;
+      }
+      @keyframes slide {
+        from {
+          transform: translateX(-120%);
+        }
+        to {
+          transform: translateX(320%);
+        }
+      }
+      .install {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .done {
+        display: none;
+        flex: 1;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .shell.is-done .install {
+        display: none;
+      }
+      .shell.is-done .done {
+        display: flex;
+      }
+      .done .grow {
+        justify-content: flex-end;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .bar i,
+        button {
+          animation: none;
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="rail">
+        <div class="mark" aria-hidden="true"><!--LOGO--></div>
+        <div class="word">MONKEY<br /><b>PDF</b></div>
+      </aside>
+      <main class="sheet">
+        <div class="install" id="install">
+          <h1>Hazlo local.</h1>
+          <p class="lede">
+            Toolkit PDF de escritorio: 23 herramientas en el rail. El archivo no sale de tu máquina.
+          </p>
+          <div class="grow">
+            <label for="dir">Carpeta de instalación</label>
+            <div class="path-row">
+              <input id="dir" type="text" spellcheck="false" />
+              <button type="button" class="ghost" id="browse">Elegir</button>
+            </div>
+            <div class="bar" id="bar"><i></i></div>
+            <p class="status" id="status"></p>
+            <div class="actions">
+              <button type="button" class="ghost" id="cancel">Cancelar</button>
+              <button type="button" class="primary" id="go">Instalar</button>
+            </div>
+          </div>
+        </div>
+        <div class="done" id="done">
+          <h1>Ya está instalado.</h1>
+          <p class="lede">MonkeyPDF quedó en este equipo.</p>
+          <div class="grow">
+            <div class="actions">
+              <button type="button" class="ghost" id="close">Cerrar</button>
+              <button type="button" class="primary" id="launch">Abrir</button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script>
+      const dir = document.getElementById("dir");
+      const status = document.getElementById("status");
+      const bar = document.getElementById("bar");
+      const go = document.getElementById("go");
+      const shell = document.querySelector(".shell");
+
+      function send(payload) {
+        const body = JSON.stringify(payload);
+        if (window.ipc && window.ipc.postMessage) window.ipc.postMessage(body);
+      }
+
+      window.__host = function (msg) {
+        if (msg.op === "defaults") {
+          dir.value = msg.path;
+        }
+        if (msg.op === "picked") {
+          dir.value = msg.path;
+        }
+        if (msg.op === "progress") {
+          bar.classList.add("on");
+          status.className = "status";
+          status.textContent = msg.text || "Instalando…";
+          go.disabled = true;
+        }
+        if (msg.op === "error") {
+          bar.classList.remove("on");
+          status.className = "status bad";
+          status.textContent = msg.text;
+          go.disabled = false;
+        }
+        if (msg.op === "done") {
+          shell.classList.add("is-done");
+        }
+      };
+
+      document.getElementById("browse").onclick = () => send({ op: "browse" });
+      document.getElementById("cancel").onclick = () => send({ op: "quit" });
+      document.getElementById("close").onclick = () => send({ op: "quit" });
+      document.getElementById("launch").onclick = () => send({ op: "open" });
+      go.onclick = () => send({ op: "install", path: dir.value });
+
+      send({ op: "ready" });
+    </script>
+  </body>
+</html>

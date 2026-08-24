@@ -28,6 +28,9 @@ src-tauri/target
 src-tauri/target-test
 **/target/
 **/target-test/
+installer-webview/engine.exe
+installer-webview/target/
+src-tauri/windows/uninstall-ui.exe
 
 # Hallmark local cache
 .hallmark/

@@ -1,6 +1,6 @@
 [package]
 name = "monkeypdf"
-version = "0.1.0"
+version = "0.1.1"
 description = "MonkeyPDF - Desktop PDF toolkit"
 authors = ["MonkeyPDF"]
 edition = "2021"

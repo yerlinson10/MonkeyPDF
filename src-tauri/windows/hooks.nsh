@@ -1,5 +1,5 @@
 ; Hallmark · component: nsis-installer · genre: playful-técnico · theme: press-shop banana
-; Rounded pill bitmaps on cream footer (mock: Cancelar outline + Siguiente banana + monkey).
+; 64-bit: SetWindowLongPtr (SetWindowLong truncates and clips the bitmap to "NE"/"BAC").
 
 !define MUI_BGCOLOR FAF8F2
 !define MUI_TEXTCOLOR 111A14
@@ -29,23 +29,110 @@
   File "/oname=$PLUGINSDIR\mp-uninstall-en.bmp" "${__FILEDIR__}\btn-uninstall-en.bmp"
 !macroend
 
-!macro MP_STAMP hwnd file bw bh
+; $0 hwnd, $R8 path, $R6 width px, $R7 height px
+!macro MP_STAMP_ONE UN
+Function ${UN}MpStampOne
   Push $3
   Push $4
-  ${If} ${hwnd} != 0
-    System::Call 'uxtheme::SetWindowTheme(p ${hwnd}, w " ", w " ")'
-    System::Call 'user32::GetWindowLongW(p ${hwnd}, i -16) i .r3'
-    IntOp $3 $3 | 0x80
-    System::Call 'user32::SetWindowLongW(p ${hwnd}, i -16, i r3)'
-    System::Call 'user32::SetWindowPos(p ${hwnd}, p 0, i 0, i 0, i ${bw}, i ${bh}, i 0x16)'
-    System::Call 'user32::LoadImageW(p 0, w "$PLUGINSDIR\${file}", i 0, i 0, i 0, i 0x10) p .r4'
+  ${If} $0 != 0
+    System::Call 'uxtheme::SetWindowTheme(p r0, w " ", w " ")'
+    System::Call 'user32::GetWindowLongPtrW(p r0, i -16) p .r3'
+    System::Int64Op $3 | 32896
+    Pop $3
+    System::Int64Op $3 & 0xFFFFFFFFFFFFFFFE
+    Pop $3
+    System::Call 'user32::SetWindowLongPtrW(p r0, i -16, p r3)'
+    System::Call 'user32::GetWindowLongPtrW(p r0, i -20) p .r3'
+    System::Int64Op $3 & 0xFFFFFFFFFFFDDCFF
+    Pop $3
+    System::Call 'user32::SetWindowLongPtrW(p r0, i -20, p r3)'
+    System::Call 'user32::LoadImageW(p 0, w R8, i 0, i R6, i R7, i 0x10) p .r4'
     ${If} $4 != 0
-      SendMessage ${hwnd} ${BM_SETIMAGE} ${IMAGE_BITMAP} $4
+      SendMessage $0 ${BM_SETIMAGE} ${IMAGE_BITMAP} $4
     ${EndIf}
   ${EndIf}
   Pop $4
   Pop $3
+FunctionEnd
 !macroend
+!insertmacro MP_STAMP_ONE ""
+!insertmacro MP_STAMP_ONE "un."
+
+; Place Back | Cancel | Next from the right, DPI-scaled, then stamp.
+!macro MP_LAYOUT_AND_STAMP UN
+Function ${UN}MpLayoutAndStamp
+  Push $0
+  Push $1
+  Push $2
+  Push $3
+  Push $4
+  Push $5
+  Push $6
+  Push $7
+  Push $9
+
+  System::Call 'user32::GetDpiForWindow(p $HWNDPARENT) i .r9'
+  ${If} $9 < 96
+    StrCpy $9 96
+  ${EndIf}
+
+  IntOp $R6 120 * $9
+  IntOp $R6 $R6 / 96
+  IntOp $R5 108 * $9
+  IntOp $R5 $R5 / 96
+  IntOp $R7 32 * $9
+  IntOp $R7 $R7 / 96
+  IntOp $R4 10 * $9
+  IntOp $R4 $R4 / 96
+  IntOp $R3 14 * $9
+  IntOp $R3 $R3 / 96
+
+  System::Alloc 16
+  Pop $1
+  System::Call 'user32::GetClientRect(p $HWNDPARENT, p r1)'
+  System::Call '*$1(i, i, i .r2, i .r3)'
+  System::Free $1
+  IntOp $R3 14 * $9
+  IntOp $R3 $R3 / 96
+
+  IntOp $6 $3 - $R3
+  IntOp $6 $6 - $R7
+
+  GetDlgItem $0 $HWNDPARENT 1
+  IntOp $1 $2 - $R3
+  IntOp $1 $1 - $R6
+  System::Call 'user32::MoveWindow(p r0, i r1, i r6, i R6, i R7, i 1)'
+  StrCpy $R8 "$PLUGINSDIR\mp-$7-$8.bmp"
+  Call ${UN}MpStampOne
+
+  GetDlgItem $0 $HWNDPARENT 2
+  IntOp $1 $1 - $R4
+  IntOp $1 $1 - $R5
+  System::Call 'user32::MoveWindow(p r0, i r1, i r6, i R5, i R7, i 1)'
+  StrCpy $R6 $R5
+  StrCpy $R8 "$PLUGINSDIR\mp-cancel-$8.bmp"
+  Call ${UN}MpStampOne
+
+  GetDlgItem $0 $HWNDPARENT 3
+  IntOp $1 $1 - $R4
+  IntOp $1 $1 - $R5
+  System::Call 'user32::MoveWindow(p r0, i r1, i r6, i R5, i R7, i 1)'
+  StrCpy $R8 "$PLUGINSDIR\mp-back-$8.bmp"
+  Call ${UN}MpStampOne
+
+  Pop $9
+  Pop $7
+  Pop $6
+  Pop $5
+  Pop $4
+  Pop $3
+  Pop $2
+  Pop $1
+  Pop $0
+FunctionEnd
+!macroend
+!insertmacro MP_LAYOUT_AND_STAMP ""
+!insertmacro MP_LAYOUT_AND_STAMP "un."
 
 Function MpSkinInit
   !insertmacro MP_UNPACK_ART
@@ -55,28 +142,10 @@ Function un.MpSkinInit
   !insertmacro MP_UNPACK_ART
 FunctionEnd
 
-Function MpSkin
+Function MpPickPrimary
   Push $0
   Push $1
   Push $6
-  Push $7
-  Push $8
-
-  StrCpy $8 "es"
-  ${If} $LANGUAGE = 1033
-    StrCpy $8 "en"
-  ${EndIf}
-
-  GetDlgItem $0 $HWNDPARENT 1036
-  ${If} $0 != 0
-    ShowWindow $0 0
-  ${EndIf}
-
-  GetDlgItem $0 $HWNDPARENT 1028
-  ${If} $0 != 0
-    SetCtlColors $0 0x00141A11 0x00F2F8FA
-  ${EndIf}
-
   GetDlgItem $0 $HWNDPARENT 1
   System::Call 'user32::GetWindowTextW(p r0, w .r6, i 80)'
   StrCpy $7 "next"
@@ -102,51 +171,59 @@ Function MpSkin
   ${If} $1 != ""
     StrCpy $7 "finish"
   ${EndIf}
-
-  ${If} $7 == "install"
-    !insertmacro MP_STAMP $0 "mp-install-$8.bmp" 168 42
-  ${ElseIf} $7 == "finish"
-    !insertmacro MP_STAMP $0 "mp-finish-$8.bmp" 168 42
-  ${ElseIf} $7 == "uninstall"
-    !insertmacro MP_STAMP $0 "mp-uninstall-$8.bmp" 128 42
-  ${Else}
-    !insertmacro MP_STAMP $0 "mp-next-$8.bmp" 168 42
-  ${EndIf}
-
-  GetDlgItem $0 $HWNDPARENT 3
-  !insertmacro MP_STAMP $0 "mp-back-$8.bmp" 128 42
-
-  GetDlgItem $0 $HWNDPARENT 2
-  !insertmacro MP_STAMP $0 "mp-cancel-$8.bmp" 128 42
-
-  Pop $8
-  Pop $7
   Pop $6
   Pop $1
   Pop $0
 FunctionEnd
 
-Function un.MpSkin
-  Push $0
+Function MpSkin
+  Push $7
   Push $8
   StrCpy $8 "es"
   ${If} $LANGUAGE = 1033
     StrCpy $8 "en"
   ${EndIf}
-  GetDlgItem $0 $HWNDPARENT 1
-  !insertmacro MP_STAMP $0 "mp-uninstall-$8.bmp" 128 42
-  GetDlgItem $0 $HWNDPARENT 3
-  !insertmacro MP_STAMP $0 "mp-back-$8.bmp" 128 42
-  GetDlgItem $0 $HWNDPARENT 2
-  !insertmacro MP_STAMP $0 "mp-cancel-$8.bmp" 128 42
+  GetDlgItem $0 $HWNDPARENT 1035
+  ${If} $0 != 0
+    ShowWindow $0 0
+  ${EndIf}
+  GetDlgItem $0 $HWNDPARENT 1036
+  ${If} $0 != 0
+    ShowWindow $0 0
+  ${EndIf}
+  Call MpPickPrimary
+  Call MpLayoutAndStamp
   Pop $8
-  Pop $0
+  Pop $7
+FunctionEnd
+
+Function un.MpSkin
+  Push $7
+  Push $8
+  StrCpy $8 "es"
+  ${If} $LANGUAGE = 1033
+    StrCpy $8 "en"
+  ${EndIf}
+  StrCpy $7 "uninstall"
+  GetDlgItem $0 $HWNDPARENT 1035
+  ${If} $0 != 0
+    ShowWindow $0 0
+  ${EndIf}
+  GetDlgItem $0 $HWNDPARENT 1036
+  ${If} $0 != 0
+    ShowWindow $0 0
+  ${EndIf}
+  Call un.MpLayoutAndStamp
+  Pop $8
+  Pop $7
 FunctionEnd
 
 !macro NSIS_HOOK_PREINSTALL
 !macroend
 
 !macro NSIS_HOOK_POSTINSTALL
+  Rename "$INSTDIR\uninstall.exe" "$INSTDIR\unins000.exe"
+  File "/oname=$INSTDIR\uninstall.exe" "${__FILEDIR__}\..\..\..\..\windows\uninstall-ui.exe"
 !macroend
 
 !macro NSIS_HOOK_PREUNINSTALL

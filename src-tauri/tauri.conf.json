@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "MonkeyPDF",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "identifier": "com.monkeypdf.desktop",
   "build": {
     "frontendDist": "../dist",
@@ -53,7 +53,8 @@
         "uninstallerHeaderImage": "windows/installer-header.bmp",
         "installerHooks": "windows/hooks.nsh",
         "template": "windows/installer.nsi",
-        "languages": ["Spanish", "English"]
+        "languages": ["Spanish", "English"],
+        "installMode": "currentUser"
       }
     }
   }

@@ -1,0 +1,29 @@
+[package]
+name = "monkeypdf-installer"
+version = "0.1.1"
+edition = "2021"
+description = "HTML installer shell for MonkeyPDF (NSIS runs silent)"
+
+[[bin]]
+name = "monkeypdf-installer"
+path = "src/main.rs"
+
+[[bin]]
+name = "monkeypdf-uninstaller"
+path = "src/uninstaller.rs"
+
+[dependencies]
+dirs = "5"
+image = { version = "0.25", default-features = false, features = ["png"] }
+rfd = "0.15"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tao = "0.34"
+wry = "0.53"
+
+[build-dependencies]
+winres = "0.1"
+
+[profile.release]
+lto = false
+codegen-units = 16

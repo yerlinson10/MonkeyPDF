@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MonkeyPDF Uninstall</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Hallmark · component: html-uninstaller · genre: playful · theme: press-shop banana
+       * states: default · hover · focus · active · disabled · loading · error · success
+       * contrast: pass
+       */
+      :root {
+        --desk: #111a14;
+        --desk-2: #18241c;
+        --paper: #faf8f2;
+        --paper-2: #f0ece3;
+        --ink: #111a14;
+        --mute: #5c6b62;
+        --line: #d9d4c8;
+        --banana: #fbb90a;
+        --ok: #1f6b3a;
+        --bad: #9b2c1a;
+        --font: "Syne", system-ui, sans-serif;
+        --stamp: 3px 3px 0 var(--ink);
+        --ease: cubic-bezier(0.215, 0.61, 0.355, 1);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        font-family: var(--font);
+        background: var(--desk);
+        color: var(--ink);
+      }
+      .shell {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        height: 100%;
+      }
+      .rail {
+        background: var(--desk);
+        color: var(--paper);
+        padding: 28px 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background-image: radial-gradient(rgba(250, 248, 242, 0.08) 1px, transparent 1px);
+        background-size: 14px 14px;
+      }
+      .mark {
+        width: 108px;
+        display: block;
+      }
+      .mark svg {
+        width: 108px;
+        height: auto;
+        display: block;
+      }
+      .word {
+        background: var(--paper);
+        color: var(--ink);
+        padding: 10px 12px;
+        border-radius: 6px;
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+      }
+      .word b {
+        color: var(--banana);
+        -webkit-text-stroke: 0.4px var(--ink);
+      }
+      .sheet {
+        background: var(--paper);
+        padding: 36px 40px 28px;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      h1 {
+        margin: 0;
+        font-size: 2.15rem;
+        font-weight: 800;
+        font-style: normal;
+        line-height: 1.05;
+      }
+      .lede {
+        margin: 14px 0 0;
+        color: var(--mute);
+        font-size: 15px;
+        line-height: 1.5;
+        font-weight: 500;
+        max-width: 42ch;
+      }
+      .grow {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        gap: 16px;
+        padding-top: 28px;
+      }
+      .check {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        min-height: 44px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--ink);
+      }
+      .check input {
+        width: 20px;
+        height: 20px;
+        margin-top: 2px;
+        accent-color: var(--banana);
+        flex-shrink: 0;
+      }
+      .check:focus-visible,
+      button:focus-visible {
+        outline: 3px solid var(--banana);
+        outline-offset: 2px;
+      }
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding-top: 8px;
+      }
+      button {
+        min-height: 44px;
+        min-width: 108px;
+        padding: 0 18px;
+        border: 2px solid var(--ink);
+        font: 800 13px/1 var(--font);
+        letter-spacing: 0.04em;
+        box-shadow: var(--stamp);
+        transition: transform 90ms var(--ease), background 90ms var(--ease);
+      }
+      button:active:not(:disabled),
+      button.is-active {
+        transform: translate(2px, 2px);
+        box-shadow: none;
+      }
+      .ghost {
+        background: var(--paper-2);
+        color: var(--ink);
+      }
+      .ghost:hover,
+      .ghost.is-hover {
+        background: #e7e2d6;
+      }
+      .primary {
+        background: var(--banana);
+        color: var(--ink);
+      }
+      .primary:hover,
+      .primary.is-hover {
+        filter: brightness(1.05);
+      }
+      button:disabled,
+      button.is-disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+      .status {
+        min-height: 1.3em;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .status.bad {
+        color: var(--bad);
+      }
+      .status.ok {
+        color: var(--ok);
+      }
+      .bar {
+        height: 8px;
+        background: var(--paper-2);
+        border: 2px solid var(--ink);
+        overflow: hidden;
+        display: none;
+      }
+      .bar.on {
+        display: block;
+      }
+      .bar i {
+        display: block;
+        height: 100%;
+        width: 40%;
+        background: var(--banana);
+        animation: slide 0.9s var(--ease) infinite;
+      }
+      @keyframes slide {
+        from {
+          transform: translateX(-120%);
+        }
+        to {
+          transform: translateX(320%);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .bar i,
+        button {
+          animation: none;
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="rail">
+        <div class="mark" aria-hidden="true"><!--LOGO--></div>
+        <div class="word">MONKEY<br /><b>PDF</b></div>
+      </aside>
+      <main class="sheet">
+        <h1 id="title">Quitar del escritorio.</h1>
+        <p class="lede" id="lede">
+          Se borra MonkeyPDF de este equipo. Los PDF de tus carpetas no se tocan.
+        </p>
+        <div class="grow">
+          <label class="check">
+            <input id="data" type="checkbox" />
+            Borrar también ajustes y archivos locales de la app
+          </label>
+          <div class="bar" id="bar"><i></i></div>
+          <p class="status" id="status"></p>
+          <div class="actions">
+            <button type="button" class="ghost" id="cancel">Cancelar</button>
+            <button type="button" class="primary" id="go">Desinstalar</button>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script>
+      const status = document.getElementById("status");
+      const bar = document.getElementById("bar");
+      const go = document.getElementById("go");
+      const title = document.getElementById("title");
+      const lede = document.getElementById("lede");
+      const data = document.getElementById("data");
+
+      function send(payload) {
+        const body = JSON.stringify(payload);
+        if (window.ipc && window.ipc.postMessage) window.ipc.postMessage(body);
+      }
+
+      window.__host = function (msg) {
+        if (msg.op === "progress") {
+          bar.classList.add("on");
+          status.className = "status";
+          status.textContent = msg.text || "Desinstalando…";
+          go.disabled = true;
+        }
+        if (msg.op === "error") {
+          bar.classList.remove("on");
+          status.className = "status bad";
+          status.textContent = msg.text;
+          go.disabled = false;
+        }
+        if (msg.op === "done") {
+          bar.classList.remove("on");
+          status.className = "status ok";
+          status.textContent = "Listo. MonkeyPDF ya no está en este equipo.";
+          title.textContent = "Ya no está.";
+          lede.textContent = "Puedes cerrar esta ventana.";
+          go.disabled = false;
+          go.textContent = "Cerrar";
+          go.dataset.mode = "quit";
+        }
+      };
+
+      document.getElementById("cancel").onclick = () => send({ op: "quit" });
+      go.onclick = () => {
+        if (go.dataset.mode === "quit") send({ op: "quit" });
+        else send({ op: "uninstall", data: !!data.checked });
+      };
+    </script>
+  </body>
+</html>
